@@ -5,6 +5,6 @@ class Auth:
     access_token: str
     refresh_token: str
 
-    
+
 
 
