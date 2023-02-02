@@ -35,9 +35,29 @@ logging.basicConfig(filename=log_file,
                     level=log_file_level)
 
 
+
 logging.info("************** Logger Started ****************")
+
+# === Read in Arguments ===
+parser = argparse.ArgumentParser()
+parser.add_argument('-r', '--register', action='store_true',
+                    help="OAuth device registration")
+parser.add_argument('-c', '--client_id', action='store',
+                    type=str, help="OAuth Client ID")
+
+
+# ===  Set Variables ===
+# Insert the OAuth2 Client ID
+args = parser.parse_args()
+register = args.register
+oauth_client_id = args.client_id
+
+if register:
+	logging.info('Registering the device with Client ID: %s' % oauth_client_id)
 
 
 
 AuthToken.Auth.access_token = "test value"
 AuthToken.Auth.refresh_token = "test value"
+
+print("Finished")
