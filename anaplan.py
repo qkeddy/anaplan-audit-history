@@ -4,66 +4,39 @@
 # Description:    Main module for invocation of Anaplan operations
 # ===============================================================================
 
-import requests
-import json
 import sys
-import os
 import logging
-import time
-
 import threading
-import time
-import argparse
 
+import utils
 import AuthToken
 import AnaplanOauth
 
-# === Clear Console ===
-if os.name == "nt":
-	os.system("cls")
-else:
-	os.system("clear")
-	
 
-# === Read in configuration ===
+# Enable logging
+logger = logging.getLogger(__name__)
 
+# Get configurations
+settings = utils.read_configuration_settings()
+args = utils.read_cli_arguments()
 
-# === Setup Logger ===
-# Dynamically set logfile name based upon current date.
-log_file_path = "./"
-local_time = time.strftime("%Y%m%d", time.localtime())
-log_file = log_file_path + local_time + "-ANAPLAN-RUN.LOG"
-log_file_level = logging.INFO  # Options: INFO, WARNING, DEBUG, INFO, ERROR, CRITICAL
-logging.basicConfig(filename=log_file,
-                    filemode='a',  # Append to Log
-                    format='%(asctime)s  :  %(levelname)s  :  %(message)s',
-                    level=log_file_level)
+# Set configurations
+device_id_uri = settings['get_device_id_uri']
+tokens_uri = settings['get_tokens_uri']
+client_id = args.client_id
 
 
-
-logging.info("************** Logger Started ****************")
-
-# === Read in Arguments ===
-parser = argparse.ArgumentParser()
-parser.add_argument('-r', '--register', action='store_true',
-                    help="OAuth device registration")
-parser.add_argument('-c', '--client_id', action='store',
-                    type=str, help="OAuth Client ID")
-
-
-
-
-
-# ===  Set Variables ===
-# Insert the OAuth2 Client ID
-args = parser.parse_args()
 register = args.register
 oauth_client_id = args.client_id
 
+
 if register:
-	logging.info('Registering the device with Client ID: %s' % oauth_client_id)
+	logger.info('Registering the device with Client ID: %s' % oauth_client_id)
 	AnaplanOauth.get_device_id(
 		oauth_client_id, 'https://us1a.app.anaplan.com/oauth/device/code')
+else:
+	logger.info('Skipping device registration and refreshing the `access_token`')
+	
 
 sys.exit(0)
 
