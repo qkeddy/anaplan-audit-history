@@ -12,6 +12,8 @@ import utils
 import AuthToken
 import AnaplanOauth
 
+# Clear the console
+utils.clear_console()
 
 # Enable logging
 logger = logging.getLogger(__name__)

@@ -1,3 +1,10 @@
+# ===============================================================================
+# Created:        3 Feb 2023
+# @author:        Quinlan Eddy (Anaplan, Inc)
+# Description:    Module for generic Python operations
+# ===============================================================================
+
+
 import os
 import sys
 import logging
