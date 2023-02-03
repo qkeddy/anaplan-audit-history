@@ -10,11 +10,13 @@ import sys
 import os
 import logging
 import time
-import AuthToken
+
 import threading
 import time
 import argparse
 
+import AuthToken
+import AnaplanOauth
 
 # === Clear Console ===
 if os.name == "nt":
@@ -54,7 +56,10 @@ oauth_client_id = args.client_id
 
 if register:
 	logging.info('Registering the device with Client ID: %s' % oauth_client_id)
+	AnaplanOauth.get_device_id(
+		oauth_client_id, 'https://us1a.app.anaplan.com/oauth/device/code')
 
+sys.exit(0)
 
 
 AuthToken.Auth.access_token = "test value"
