@@ -41,12 +41,10 @@ def get_device_id(oauth_client_id, url):
         input("Press Enter to continue...")
     except:
         # Check status codes
-        if res.status_code == 403:
-            logging.error('%s with URI: %s', json.loads(res.text)['error_description'], url)
-        elif res.status_code == 404:
-            logging.error('%s with URL: %s', json.loads(res.text)['message'], url)
-        logging.error('Please check device code or service URI')
-        print('ERROR - Please check logs')
+        process_status_exceptions(res, url)
+
+
+
 
 
 # ===  Step #2 - Device grant   ===
@@ -127,3 +125,15 @@ def refresh_tokens(oauth_client_id, refresh_token):
             json.dump(get_auth, auth_file)
         logging.info("Updated Access Token and Refresh written to file system")
         time.sleep(5)
+
+
+def process_status_exceptions(res, url):
+    # pyright: reportUnboundVariable=false
+    if res.status_code == 403:  
+        logging.error('%s with URI: %s', json.loads(
+            res.text)['error_description'], url)
+    elif res.status_code == 404:
+        logging.error('%s with URL: %s', json.loads(
+            res.text)['message'], url)
+        logging.error('Please check device code or service URI')
+        print('ERROR - Please check logs')
