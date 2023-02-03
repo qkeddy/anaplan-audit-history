@@ -32,16 +32,15 @@ oauth_client_id = args.client_id
 
 if register:
 	logger.info('Registering the device with Client ID: %s' % oauth_client_id)
-	AnaplanOauth.get_device_id(
-		oauth_client_id, 'https://us1a.app.anaplan.com/oauth/device/code')
+	AnaplanOauth.get_device_id(oauth_client_id, device_id_uri)
+	AnaplanOauth.get_tokens(oauth_client_id, tokens_uri)
 else:
-	logger.info('Skipping device registration and refreshing the `access_token`')
+	logger.info('Skipping device registration and refreshing the access_token')
+	AnaplanOauth.refresh_tokens(oauth_client_id, tokens_uri)
 	
+	
+print("Finished")
 
 sys.exit(0)
 
 
-AuthToken.Auth.access_token = "test value"
-AuthToken.Auth.refresh_token = "test value"
-
-print("Finished")
