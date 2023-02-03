@@ -121,6 +121,7 @@ def refresh_tokens(oauth_client_id, url):
 
         try:
             logger.info("Requesting a new OAuth Access Token and Refresh Token")
+            print("Requesting a new OAuth Access Token and Refresh Token")
             res = requests.post(url, headers=get_headers, json=get_body)
             
             # Convert payload to dictionary for parsing
@@ -141,11 +142,13 @@ def refresh_tokens(oauth_client_id, url):
             with open("auth.json", "w") as auth_file:
                 json.dump(get_auth, auth_file)
             logger.info("Updated Access Token and Refresh written to file system")
+            print("Updated Access Token and Refresh written to file system")
             time.sleep(5)
         except:
             # Check status codes
             process_status_exceptions(res, url)
             logger.error("Error updating access and refresh tokens")
+            print("Error updating access and refresh tokens")
             break
 
 
