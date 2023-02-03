@@ -29,7 +29,7 @@ def get_device_id(oauth_client_id, url):
     }
 
     try:
-        res = requests.post(url, json=get_body, headers=get_headers)
+        res = requests.post(url, headers=get_headers, json=get_body)
         # Convert payload to dictionary for parsing
         j_res = json.loads(res.text)
         # Set values
@@ -49,38 +49,46 @@ def get_device_id(oauth_client_id, url):
 
 # ===  Step #2 - Device grant   ===
 # Response returns a `access_token` and `refresh_token`
-def get_tokens(oauth_client_id, device_code):
+def get_tokens(oauth_client_id, device_code, url):
+    # Set Headers
     get_headers = {
         'Content-Type': 'application/json',
         'Accept': '*/*',
     }
 
+    # Set Body
     get_body = {
         "client_id": oauth_client_id,
         "device_code": device_code,
         "grant_type": "urn:ietf:params:oauth:grant-type:device_code"
     }
-    res = requests.post('https://us1a.app.anaplan.com/oauth/token',
-                        json=get_body, headers=get_headers)
-    logging.info("Requesting OAuth Access Token and Refresh Token")
 
-    # Convert payload to dictionary for parsing
-    j_res = json.loads(res.text)
+    try:
+        res = requests.post('https://us1a.app.anaplan.com/oauth/token', headers=get_headers, json=get_body )
+        logging.info("Requesting OAuth Access Token and Refresh Token")
 
-    # Set values in AuthToken Dataclass
-    AuthToken.Auth.access_token = j_res['access_token']
-    AuthToken.Auth.refresh_token = j_res['refresh_token']
-    logging.info("Access Token and Refresh Token received")
+        # Convert payload to dictionary for parsing
+        j_res = json.loads(res.text)
 
-    # Write values to file system
-    get_auth = {
-        "access_token": AuthToken.Auth.access_token,
-        "refresh_token": AuthToken.Auth.refresh_token
-    }
+        # Set values in AuthToken Dataclass
+        AuthToken.Auth.access_token = j_res['access_token']
+        AuthToken.Auth.refresh_token = j_res['refresh_token']
+        logging.info("Access Token and Refresh Token received")
 
-    with open("auth.json", "w") as auth_file:
-        json.dump(get_auth, auth_file)
-        logging.info("Access Token and Refresh written to file system")
+        # Write values to file system
+        get_auth = {
+            "access_token": AuthToken.Auth.access_token,
+            "refresh_token": AuthToken.Auth.refresh_token
+        }
+
+        with open("auth.json", "w") as auth_file:
+            json.dump(get_auth, auth_file)
+            logging.info("Access Token and Refresh written to file system")
+    except:
+        print("xxx")
+
+
+
 
    # 2. OAuth: Device Grant Get Access and Refresh token
 # ===  Step #3 - Device grant   ===
@@ -128,6 +136,7 @@ def refresh_tokens(oauth_client_id, refresh_token):
 
 
 def process_status_exceptions(res, url):
+    # Override linting
     # pyright: reportUnboundVariable=false
     if res.status_code == 403:  
         logging.error('%s with URI: %s', json.loads(

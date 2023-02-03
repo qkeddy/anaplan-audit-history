@@ -25,6 +25,9 @@ else:
 	os.system("clear")
 	
 
+# === Read in configuration ===
+
+
 # === Setup Logger ===
 # Dynamically set logfile name based upon current date.
 log_file_path = "./"
@@ -46,6 +49,9 @@ parser.add_argument('-r', '--register', action='store_true',
                     help="OAuth device registration")
 parser.add_argument('-c', '--client_id', action='store',
                     type=str, help="OAuth Client ID")
+
+
+
 
 
 # ===  Set Variables ===
