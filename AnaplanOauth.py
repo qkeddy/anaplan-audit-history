@@ -9,6 +9,7 @@ import logging
 import requests
 import json
 import time
+import threading
 import AuthToken
 
 
@@ -40,7 +41,7 @@ def get_device_id(oauth_client_id, url):
         # Set values
         AuthToken.Auth.device_code = j_res['device_code']
         logger.info("Device Code successfully received")
-        
+
         # Pause for user authentication
         print('Please authenticate with Anaplan using this URL using an incognito browser: ',
               j_res['verification_uri_complete'])
@@ -48,7 +49,6 @@ def get_device_id(oauth_client_id, url):
     except:
         # Check status codes
         process_status_exceptions(res, url)
-
 
 
 # ===  Step #2 - Device grant   ===
@@ -70,7 +70,7 @@ def get_tokens(oauth_client_id, url):
     try:
         logger.info("Requesting OAuth Access Token and Refresh Token")
         res = requests.post(url, headers=get_headers, json=get_body)
-        
+
         # Convert payload to dictionary for parsing
         j_res = json.loads(res.text)
 
@@ -91,7 +91,7 @@ def get_tokens(oauth_client_id, url):
 
     except IOError:
         print('Unable to write file')
-    
+
     except:
         # Check status codes
         process_status_exceptions(res, url)
@@ -99,7 +99,7 @@ def get_tokens(oauth_client_id, url):
 
 # ===  Step #3 - Device grant  ===
 # Response returns an updated `access_token` and `refresh_token`
-def refresh_tokens(oauth_client_id, url):
+def refresh_tokens(uri, delay):
     # If the refresh_token is not available then read from `auth.json`
     if AuthToken.Auth.refresh_token == "none":
         tokens = read_persisted_tokens()
@@ -118,12 +118,12 @@ def refresh_tokens(oauth_client_id, url):
             "refresh_token": AuthToken.Auth.refresh_token,
             "grant_type": "refresh_token"
         }
-
         try:
-            logger.info("Requesting a new OAuth Access Token and Refresh Token")
+            logger.info(
+                "Requesting a new OAuth Access Token and Refresh Token")
             print("Requesting a new OAuth Access Token and Refresh Token")
-            res = requests.post(url, headers=get_headers, json=get_body)
-            
+            res = requests.post(uri, headers=get_headers, json=get_body)
+
             # Convert payload to dictionary for parsing
             j_res = json.loads(res.text)
 
@@ -141,15 +141,42 @@ def refresh_tokens(oauth_client_id, url):
 
             with open("auth.json", "w") as auth_file:
                 json.dump(get_auth, auth_file)
-            logger.info("Updated Access Token and Refresh written to file system")
+            logger.info(
+                "Updated Access Token and Refresh written to file system")
             print("Updated Access Token and Refresh written to file system")
-            time.sleep(5)
+
+            # If delay is set than continue to refresh the token
+            if delay > 0:
+                time.sleep(delay)
+            else:
+                break
         except:
             # Check status codes
-            process_status_exceptions(res, url)
+            process_status_exceptions(res, uri)
             logger.error("Error updating access and refresh tokens")
             print("Error updating access and refresh tokens")
             break
+
+
+# TODO add comment
+class refresh_token_thread (threading.Thread):
+    # Overriding the default `__init__`
+   def __init__(self, thread_id, name, delay, uri):
+      print('Refresh Token', thread_id, uri)
+      threading.Thread.__init__(self)
+      self.thread_id = thread_id
+      self.name = name
+      self.delay = delay
+      self.daemon = True
+      self.uri = uri
+
+   # Overriding the default subfunction `run()`
+   def run(self):
+      # Initiate the thread
+      print("Starting " + self.name)
+      refresh_tokens(self.uri, self.delay)
+      print("Exiting " + self.name)
+
 
 
 # === Read in configuration ===
