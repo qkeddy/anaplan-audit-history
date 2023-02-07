@@ -38,19 +38,14 @@ else:
 	print('Skipping device registration and refreshing the access_token')
 	logger.info('Skipping device registration and refreshing the access_token')
 	AnaplanOauth.refresh_tokens(tokens_uri, 0)
-	
 
 # Configure multithreading 
-t1_refresh_token = AnaplanOauth.refresh_token_thread(1, "Refresh Token", 5, tokens_uri)
-t2_get_workspaces = GetWorkspaces.get_workspaces_thread(2, "Get Workspaces", 10)
+t1_refresh_token = AnaplanOauth.refresh_token_thread(1, name="Refresh Token", delay=5, uri=tokens_uri)
+t2_get_workspaces = GetWorkspaces.get_workspaces_thread(2, name="Get Workspaces", counter=3, delay=10)
 
 # Start new Threads
 t1_refresh_token.start()
 t2_get_workspaces.start()
 
-	
-print("Finished Processing")
-
+# Exit with return code 0
 sys.exit(0)
-
-

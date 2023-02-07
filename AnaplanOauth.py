@@ -158,7 +158,9 @@ def refresh_tokens(uri, delay):
             break
 
 
-# TODO add comment
+# ===  Refresh token class  ===
+# Pass in values to be used with the refresh token function
+# Explicitly set the thread to be a subordinate daemon that will stop processing with main thread
 class refresh_token_thread (threading.Thread):
     # Overriding the default `__init__`
    def __init__(self, thread_id, name, delay, uri):
@@ -167,8 +169,8 @@ class refresh_token_thread (threading.Thread):
       self.thread_id = thread_id
       self.name = name
       self.delay = delay
-      self.daemon = True
       self.uri = uri
+      self.daemon = True
 
    # Overriding the default subfunction `run()`
    def run(self):

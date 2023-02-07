@@ -8,24 +8,27 @@ import AuthToken
 # TODO add comment
 class get_workspaces_thread (threading.Thread):
    # Overriding the default `__init__`
-   def __init__(self, thread_id, name, delay):
-      print('Getting Workspaces', thread_id)
+   def __init__(self, thread_id, name, delay, counter):
+      print('Getting Workspaces - Thread', thread_id)
       threading.Thread.__init__(self)
       self.thread_id = thread_id
       self.name = name
       self.delay = delay
+      self.counter = counter
       self.daemon = False
 
    # Overriding the default subfunction `run()`
    def run(self):
       # Initiate the thread
       print("Starting " + self.name)
-      get_workspaces(self.name, 5, self.delay)
+      get_workspaces(self.name, self.counter, self.delay)
       print("Exiting " + self.name)
 
 
-#############################################
-# 4. Get Workspaces
+# ===  Get Workspaces class  ===
+# Pass in values to be used with the get Workspaces function
+# This is only to demonstrate repeatedly calling an API endpoint 
+# based upon the counter value
 def get_workspaces(threadName, counter, delay):
     get_headers = {
         'Content-Type': 'application/json',
