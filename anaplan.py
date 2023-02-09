@@ -6,10 +6,10 @@
 
 import sys
 import logging
-import threading
 
 import utils
 import AnaplanOauth
+import AuthToken
 import GetWorkspaces
 
 # Clear the console
@@ -26,13 +26,13 @@ args = utils.read_cli_arguments()
 device_id_uri = settings['get_device_id_uri']
 tokens_uri = settings['get_tokens_uri']
 register = args.register
-client_id = args.client_id
+AuthToken.Auth.client_id = args.client_id
 
 # If register flag is set, then request the user to authenticate with Anaplan to create device code
 if register:
-	logger.info('Registering the device with Client ID: %s' % client_id)
-	AnaplanOauth.get_device_id(client_id, device_id_uri)
-	AnaplanOauth.get_tokens(client_id, tokens_uri)
+	logger.info('Registering the device with Client ID: %s' % AuthToken.Auth.client_id)
+	AnaplanOauth.get_device_id(device_id_uri)
+	AnaplanOauth.get_tokens(tokens_uri)
 	
 else:
 	print('Skipping device registration and refreshing the access_token')

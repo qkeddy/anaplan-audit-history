@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 # ===  Step #1 - Device grant   ===
 # Upon success, returns a Device ID and Verification URL
-def get_device_id(oauth_client_id, url):
+def get_device_id(uri):
     # Set Headers
     get_headers = {
         'Content-Type': 'application/json',
@@ -27,13 +27,13 @@ def get_device_id(oauth_client_id, url):
 
     # Set Body
     get_body = {
-        "client_id": oauth_client_id,
+        "client_id": AuthToken.Auth.client_id,
         "scope": "openid profile email offline_access"
     }
 
     try:
         logger.info("Requesting Device ID and Verification URL")
-        res = requests.post(url, headers=get_headers, json=get_body)
+        res = requests.post(uri, headers=get_headers, json=get_body)
 
         # Convert payload to dictionary for parsing
         j_res = json.loads(res.text)
@@ -48,12 +48,12 @@ def get_device_id(oauth_client_id, url):
         input("Press Enter to continue...")
     except:
         # Check status codes
-        process_status_exceptions(res, url)
+        process_status_exceptions(res, uri)
 
 
 # ===  Step #2 - Device grant   ===
 # Response returns a `access_token` and `refresh_token`
-def get_tokens(oauth_client_id, url):
+def get_tokens(uri):
     # Set Headers
     get_headers = {
         'Content-Type': 'application/json',
@@ -62,14 +62,14 @@ def get_tokens(oauth_client_id, url):
 
     # Set Body
     get_body = {
-        "client_id": oauth_client_id,
+        "client_id": AuthToken.Auth.client_id,
         "device_code": AuthToken.Auth.device_code,
         "grant_type": "urn:ietf:params:oauth:grant-type:device_code"
     }
 
     try:
         logger.info("Requesting OAuth Access Token and Refresh Token")
-        res = requests.post(url, headers=get_headers, json=get_body)
+        res = requests.post(uri, headers=get_headers, json=get_body)
 
         # Convert payload to dictionary for parsing
         j_res = json.loads(res.text)
@@ -81,7 +81,7 @@ def get_tokens(oauth_client_id, url):
 
         # Write values to file system
         get_auth = {
-            "client_id": oauth_client_id,
+            "client_id": AuthToken.Auth.client_id,
             "access_token": AuthToken.Auth.access_token,
             "refresh_token": AuthToken.Auth.refresh_token
         }
@@ -94,7 +94,7 @@ def get_tokens(oauth_client_id, url):
 
     except:
         # Check status codes
-        process_status_exceptions(res, url)
+        process_status_exceptions(res, uri)
 
 
 # ===  Step #3 - Device grant  ===
@@ -135,7 +135,6 @@ def refresh_tokens(uri, delay):
             # Write values to file system
             get_auth = {
                 "client_id": AuthToken.Auth.client_id,
-                "access_token": AuthToken.Auth.access_token,
                 "refresh_token": AuthToken.Auth.refresh_token
             }
 
@@ -182,19 +181,19 @@ class refresh_token_thread (threading.Thread):
 
 
 # === Read in configuration ===
-def process_status_exceptions(res, url):
+def process_status_exceptions(res, uri):
     # Override linting
     # pyright: reportUnboundVariable=false
 
     if res.status_code == 401:
         logger.error('%s with URI: %s', json.loads(
-            res.text)['error_description'], url)
+            res.text)['error_description'], uri)
     elif res.status_code == 403:
         logger.error('%s with URI: %s', json.loads(
-            res.text)['error_description'], url)
+            res.text)['error_description'], uri)
     elif res.status_code == 404:
         logger.error('%s with URL: %s', json.loads(
-            res.text)['message'], url)
+            res.text)['message'], uri)
         logger.error('Please check device code or service URI')
         print('ERROR - Please check logs')
 
