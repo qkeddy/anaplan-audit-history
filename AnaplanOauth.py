@@ -1,6 +1,6 @@
 # ===============================================================================
 # Created:        2 Feb 2023
-# @author:        Quinlan Eddy (Anaplan, Inc)
+# @author:        Quinlan Eddy
 # Description:    Module for Anaplan OAuth2 Authentication
 # ===============================================================================
 
