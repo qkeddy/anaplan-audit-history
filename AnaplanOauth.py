@@ -11,6 +11,7 @@ import json
 import time
 import threading
 import AuthToken
+import DbOps
 
 
 # Enable logger
@@ -77,17 +78,13 @@ def get_tokens(uri):
         # Set values in AuthToken Dataclass
         AuthToken.Auth.access_token = j_res['access_token']
         AuthToken.Auth.refresh_token = j_res['refresh_token']
+
         logger.info("Access Token and Refresh Token received")
 
-        # Write values to file system
-        get_auth = {
-            "client_id": AuthToken.Auth.client_id,
-            "access_token": AuthToken.Auth.access_token,
-            "refresh_token": AuthToken.Auth.refresh_token
-        }
-        with open("auth.json", "w") as auth_file:
-            json.dump(get_auth, auth_file)
-            logger.info("Access Token and Refresh written to file system")
+        # Persist token values
+        values = (AuthToken.Auth.client_id, AuthToken.Auth.refresh_token)
+        DbOps.write_db(values=values)
+
 
     except IOError:
         print('Unable to write file')
@@ -102,9 +99,15 @@ def get_tokens(uri):
 def refresh_tokens(uri, delay):
     # If the refresh_token is not available then read from `auth.json`
     if AuthToken.Auth.refresh_token == "none":
-        tokens = read_persisted_tokens()
-        AuthToken.Auth.client_id = tokens['client_id']
-        AuthToken.Auth.refresh_token = tokens['refresh_token']
+        tokens = DbOps.read_db()
+
+        if tokens['val1'] == "empty":
+            logger.warning("This client needs to be authorized by Anaplan. Please run this script again. Start with `-h` for more information")
+            print("This client needs to be authorized by Anaplan. Please run this script again. Start with `-h` for more information")
+            sys.exit(-1)
+
+        AuthToken.Auth.client_id = tokens['val1']
+        AuthToken.Auth.refresh_token = tokens['val2']
 
     get_headers = {
         'Content-Type': 'application/json',
@@ -132,17 +135,13 @@ def refresh_tokens(uri, delay):
             AuthToken.Auth.refresh_token = j_res['refresh_token']
             logger.info("Updated Access Token and Refresh Token received")
 
-            # Write values to file system
-            get_auth = {
-                "client_id": AuthToken.Auth.client_id,
-                "refresh_token": AuthToken.Auth.refresh_token
-            }
-
-            with open("auth.json", "w") as auth_file:
-                json.dump(get_auth, auth_file)
-            logger.info(
-                "Updated Access Token and Refresh written to file system")
+            logger.info("Updated Access Token and Refresh written to file system")
             print("Updated Access Token and Refresh written to file system")
+
+            # Persist token values
+            values = (AuthToken.Auth.client_id, AuthToken.Auth.refresh_token)
+            DbOps.write_db(values=values)
+
 
             # If delay is set than continue to refresh the token
             if delay > 0:
@@ -180,7 +179,8 @@ class refresh_token_thread (threading.Thread):
 
 
 
-# === Read in configuration ===
+# === Process REST API endpoint exceptions ===
+# Log exceptions to logger
 def process_status_exceptions(res, uri):
     # Override linting
     # pyright: reportUnboundVariable=false
@@ -197,18 +197,3 @@ def process_status_exceptions(res, uri):
         logger.error('Please check device code or service URI')
         print('ERROR - Please check logs')
 
-
-# === Read in configuration ===
-def read_persisted_tokens():
-    try:
-        with open("auth.json", "r") as tokens_file:
-            tokens = json.load(tokens_file)
-        logger.info("Read in tokens successfully")
-        return tokens
-
-    except:
-        print("Unable to open the `tokens.json` file. Please ensure the file is in the path of this Python module")
-        logger.error(
-            "Unable to open the `tokens.json` file. Please ensure the file is in the path of this Python module")
-        # Exit with a non-zero exit code
-        sys.exit(1)

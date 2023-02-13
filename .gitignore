@@ -133,3 +133,4 @@ dmypy.json
 secret.txt
 auth.json
 workspaces.json
+*.db3

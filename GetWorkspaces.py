@@ -5,7 +5,8 @@ import threading
 import AuthToken
 
 
-# TODO add comment
+# ===  Configure Get Workspace threading  ===
+# Pass in parameters used in looping through retrieving workspaces
 class get_workspaces_thread (threading.Thread):
    # Overriding the default `__init__`
    def __init__(self, thread_id, name, delay, counter):
