@@ -6,8 +6,10 @@
 
 import apsw
 import apsw.ext
+import jwt
 import os
 import logging
+import AuthToken
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +26,13 @@ def read_db():
 
     # Check if SQLite database exists
     if os.path.isfile("dbfile.db3"):
+        # Create connection to the existing database
         connection = apsw.Connection("dbfile.db3", flags=apsw.SQLITE_OPEN_READONLY)
-
 
         # Get values
         for val1, val2 in connection.execute("select val1, val2 from anaplan"):
-            tokens = {"val1": val1, "val2": val2}
-            
+            tokens = {"val1": val1, "val2": jwt.decode(val2, val1, algorithms=["HS256"])['val2']}
+
     else:
         logger.warning("Database file does not exist")
         tokens = {"val1": "empty", "val2": "empty"}
@@ -38,7 +40,13 @@ def read_db():
     return tokens
 
 # === Create or update a SQLite database ===
-def write_db(values):
+def write_db():
+    
+    # Encode 
+    encoded_token = jwt.encode(
+        {"val2": AuthToken.Auth.refresh_token}, AuthToken.Auth.client_id, algorithm="HS256")
+    values = (AuthToken.Auth.client_id, encoded_token)
+
     # Check if SQLite database exists
     if os.path.isfile("dbfile.db3"):
         # Create connection to the existing database

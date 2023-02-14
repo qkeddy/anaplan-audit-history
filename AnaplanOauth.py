@@ -10,6 +10,7 @@ import requests
 import json
 import time
 import threading
+import bcrypt
 import AuthToken
 import DbOps
 
@@ -78,16 +79,10 @@ def get_tokens(uri):
         # Set values in AuthToken Dataclass
         AuthToken.Auth.access_token = j_res['access_token']
         AuthToken.Auth.refresh_token = j_res['refresh_token']
-
         logger.info("Access Token and Refresh Token received")
 
         # Persist token values
-        values = (AuthToken.Auth.client_id, AuthToken.Auth.refresh_token)
-        DbOps.write_db(values=values)
-
-
-    except IOError:
-        print('Unable to write file')
+        DbOps.write_db()
 
     except:
         # Check status codes
@@ -104,7 +99,9 @@ def refresh_tokens(uri, delay):
         if tokens['val1'] == "empty":
             logger.warning("This client needs to be authorized by Anaplan. Please run this script again. Start with `-h` for more information")
             print("This client needs to be authorized by Anaplan. Please run this script again. Start with `-h` for more information")
-            sys.exit(-1)
+
+            # Exit with return code 1
+            sys.exit(1)
 
         AuthToken.Auth.client_id = tokens['val1']
         AuthToken.Auth.refresh_token = tokens['val2']
@@ -135,12 +132,8 @@ def refresh_tokens(uri, delay):
             AuthToken.Auth.refresh_token = j_res['refresh_token']
             logger.info("Updated Access Token and Refresh Token received")
 
-            logger.info("Updated Access Token and Refresh written to file system")
-            print("Updated Access Token and Refresh written to file system")
-
             # Persist token values
-            values = (AuthToken.Auth.client_id, AuthToken.Auth.refresh_token)
-            DbOps.write_db(values=values)
+            DbOps.write_db()
 
 
             # If delay is set than continue to refresh the token
