@@ -47,7 +47,7 @@ A link to the GitHub repository can be viewed [here](https://github.com/qkeddy/a
 
 2. After the above step, the script can be executed unattended by simply executing `python3 anaplan.py`
 
-Note: The `client_id` and `refresh_token` are stored as encrypted values in a SQLite database.
+Note: The `client_id` and `refresh_token` are stored as encrypted values in a SQLite database. As an alternative, a solution like [auth0](https://auth0.com/) would further enhance security. 
 
 ## Tests
 Currently, no automated unit tests have been built. 
