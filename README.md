@@ -43,9 +43,13 @@ A link to the GitHub repository can be viewed [here](https://github.com/qkeddy/a
 
 ## Usage
 
-1. When executing the first time on a particular device, open the CLI in the project folder and run `python3 anaplan.py -r -c <<enter Client ID>>` 
+1. When executing the first time on a particular device, open the CLI in the project folder and run `python3 anaplan.py -r -c <<enter Client ID>>`.
 
-2. After the above step, the script can be executed unattended by simply executing `python3 anaplan.py`
+2. After the above step, the script can be executed unattended by simply executing `python3 anaplan.py`.
+
+3. To see all command line arguments, start the script with `-h`.
+
+4. To update any of the Anaplan API URLs, please edit the file `settings.json`.
 
 Note: The `client_id` and `refresh_token` are stored as encrypted values in a SQLite database. As an alternative, a solution like [auth0](https://auth0.com/) would further enhance security. 
 

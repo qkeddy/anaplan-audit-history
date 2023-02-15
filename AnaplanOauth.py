@@ -97,9 +97,8 @@ def refresh_tokens(uri, delay):
         tokens = DbOps.read_db()
 
         if tokens['val1'] == "empty":
-            logger.warning("This client needs to be authorized by Anaplan. Please run this script again. Start with `-h` for more information")
-            print("This client needs to be authorized by Anaplan. Please run this script again. Start with `-h` for more information")
-
+            logger.warning("This client needs to be authorized by Anaplan. Please run this script again with the following arguments: python3 anaplan.py -r -c <<enter Client ID>>. For more information, use the argument `-h`.")
+            print("This client needs to be authorized by Anaplan. Please run this script again with the following arguments: python3 anaplan.py -r -c <<enter Client ID>>. For more information, use the argument `-h`.")
             # Exit with return code 1
             sys.exit(1)
 
