@@ -52,5 +52,7 @@ def read_cli_arguments():
                         help="OAuth device registration")
     parser.add_argument('-c', '--client_id', action='store',
                         type=str, help="OAuth Client ID")
+    parser.add_argument('-t', '--token_ttl', action='store',
+                        type=str, help="Token time to live value in seconds")
     args = parser.parse_args()
     return args

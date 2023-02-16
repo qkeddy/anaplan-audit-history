@@ -10,6 +10,13 @@ import threading
 import AuthToken
 
 
+### Reference code to invoke this module from another module ###
+# t2_get_workspaces = GetWorkspaces.get_workspaces_thread(2, name="Get Workspaces", counter=3, delay=10)
+
+# Start new Threads
+# t2_get_workspaces.start()
+
+
 # ===  Configure Get Workspace threading  ===
 # Pass in parameters used in looping through retrieving workspaces
 class get_workspaces_thread (threading.Thread):

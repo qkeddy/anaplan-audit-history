@@ -8,7 +8,7 @@ import logging
 import utils
 import AnaplanOauth
 import AuthToken
-import GetWorkspaces
+import AnaplanOps
 
 # Clear the console
 utils.clear_console()
@@ -23,6 +23,8 @@ args = utils.read_cli_arguments()
 # Set configurations
 device_id_uri = settings['get_device_id_uri']
 tokens_uri = settings['get_tokens_uri']
+users_uri = settings['get_users_uri']
+audit_events_uri = settings['get_audit_events_uri']
 register = args.register
 AuthToken.Auth.client_id = args.client_id
 
@@ -37,13 +39,12 @@ else:
 	logger.info('Skipping device registration and refreshing the access_token')
 	AnaplanOauth.refresh_tokens(tokens_uri, 0)
 
-# Configure multithreading 
-t1_refresh_token = AnaplanOauth.refresh_token_thread(1, name="Refresh Token", delay=5, uri=tokens_uri)
-t2_get_workspaces = GetWorkspaces.get_workspaces_thread(2, name="Get Workspaces", counter=3, delay=10)
+# Start background thread to refresh the `access_token`
+refresh_token = AnaplanOauth.refresh_token_thread(1, name="Refresh Token", delay=int(args.token_ttl), uri=tokens_uri)
+refresh_token.start()
 
-# Start new Threads
-t1_refresh_token.start()
-t2_get_workspaces.start()
+AnaplanOps.get_users(users_uri)
+AnaplanOps.get_audit_events(audit_events_uri)
 
 # Exit with return code 0
 sys.exit(0)

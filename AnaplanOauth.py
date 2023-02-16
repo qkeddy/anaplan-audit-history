@@ -13,6 +13,7 @@ import apsw
 import apsw.ext
 import jwt
 import AuthToken
+import StatusExceptions
 
 
 # Enable logger
@@ -36,6 +37,7 @@ def get_device_id(uri):
         "client_id": AuthToken.Auth.client_id,
         "scope": "openid profile email offline_access"
     }
+    res = None
 
     try:
         logger.info("Requesting Device ID and Verification URL")
@@ -54,7 +56,7 @@ def get_device_id(uri):
         input("Press Enter to continue...")
     except:
         # Check status codes
-        process_status_exceptions(res, uri)
+        StatusExceptions.process_status_exceptions(res, uri)
 
 
 # ===  Step #2 - Device grant   ===
@@ -72,6 +74,7 @@ def get_tokens(uri):
         "device_code": AuthToken.Auth.device_code,
         "grant_type": "urn:ietf:params:oauth:grant-type:device_code"
     }
+    res = None
 
     try:
         logger.info("Requesting OAuth Access Token and Refresh Token")
@@ -90,7 +93,7 @@ def get_tokens(uri):
 
     except:
         # Check status codes
-        process_status_exceptions(res, uri)
+        StatusExceptions.process_status_exceptions(res, uri)
 
 
 # ===  Step #3 - Device grant  ===
@@ -114,6 +117,10 @@ def refresh_tokens(uri, delay):
         'Accept': '*/*',
     }
 
+    # If delay is set then pause 
+    if delay > 0:
+        time.sleep(delay)
+
     # As this is a daemon thread, keep looping until main thread ends
     while True:
         get_body = {
@@ -121,6 +128,7 @@ def refresh_tokens(uri, delay):
             "refresh_token": AuthToken.Auth.refresh_token,
             "grant_type": "refresh_token"
         }
+        res = None
         try:
             logger.info(
                 "Requesting a new OAuth Access Token and Refresh Token")
@@ -138,15 +146,15 @@ def refresh_tokens(uri, delay):
             # Persist token values
             write_token_db()
 
-
-            # If delay is set than continue to refresh the token
+            # If delay is set then continue to refresh the token
             if delay > 0:
                 time.sleep(delay)
             else:
                 break
+
         except:
             # Check status codes
-            process_status_exceptions(res, uri)
+            StatusExceptions.process_status_exceptions(res, uri)
             logger.error("Error updating access and refresh tokens")
             print("Error updating access and refresh tokens")
             break
@@ -173,25 +181,6 @@ class refresh_token_thread (threading.Thread):
       refresh_tokens(self.uri, self.delay)
       print("Exiting " + self.name)
 
-
-
-# === Process REST API endpoint exceptions ===
-# Log exceptions to logger
-def process_status_exceptions(res, uri):
-    # Override linting
-    # pyright: reportUnboundVariable=false
-
-    if res.status_code == 401:
-        logger.error('%s with URI: %s', json.loads(
-            res.text)['error_description'], uri)
-    elif res.status_code == 403:
-        logger.error('%s with URI: %s', json.loads(
-            res.text)['error_description'], uri)
-    elif res.status_code == 404:
-        logger.error('%s with URL: %s', json.loads(
-            res.text)['message'], uri)
-        logger.error('Please check device code or service URI')
-        print('ERROR - Please check logs')
 
 
 # === Read a SQLite database ===
