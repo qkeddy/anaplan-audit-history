@@ -1,22 +1,26 @@
 # ===============================================================================
-# Created:        2 Feb 2023
-# Updated:
-# @author:        Quinlan Eddy
 # Description:    Module for Anaplan OAuth2 Authentication
 # ===============================================================================
 
 import sys
+import os
 import logging
 import requests
 import json
 import time
 import threading
+import apsw
+import apsw.ext
+import jwt
 import AuthToken
-import DbOps
 
 
 # Enable logger
 logger = logging.getLogger(__name__)
+
+# Forward SQLite logs to the logging module
+apsw.ext.log_sqlite()
+
 
 # ===  Step #1 - Device grant   ===
 # Upon success, returns a Device ID and Verification URL
@@ -82,7 +86,7 @@ def get_tokens(uri):
         logger.info("Access Token and Refresh Token received")
 
         # Persist token values
-        DbOps.write_db()
+        write_token_db()
 
     except:
         # Check status codes
@@ -94,16 +98,16 @@ def get_tokens(uri):
 def refresh_tokens(uri, delay):
     # If the refresh_token is not available then read from `auth.json`
     if AuthToken.Auth.refresh_token == "none":
-        tokens = DbOps.read_db()
+        tokens = read_token_db()
 
-        if tokens['val1'] == "empty":
+        if tokens['client_id'] == "empty":
             logger.warning("This client needs to be authorized by Anaplan. Please run this script again with the following arguments: python3 anaplan.py -r -c <<enter Client ID>>. For more information, use the argument `-h`.")
             print("This client needs to be authorized by Anaplan. Please run this script again with the following arguments: python3 anaplan.py -r -c <<enter Client ID>>. For more information, use the argument `-h`.")
             # Exit with return code 1
             sys.exit(1)
 
-        AuthToken.Auth.client_id = tokens['val1']
-        AuthToken.Auth.refresh_token = tokens['val2']
+        AuthToken.Auth.client_id = tokens['client_id']
+        AuthToken.Auth.refresh_token = tokens['refresh_token']
 
     get_headers = {
         'Content-Type': 'application/json',
@@ -132,7 +136,7 @@ def refresh_tokens(uri, delay):
             logger.info("Updated Access Token and Refresh Token received")
 
             # Persist token values
-            DbOps.write_db()
+            write_token_db()
 
 
             # If delay is set than continue to refresh the token
@@ -189,3 +193,48 @@ def process_status_exceptions(res, uri):
         logger.error('Please check device code or service URI')
         print('ERROR - Please check logs')
 
+
+# === Read a SQLite database ===
+def read_token_db():
+
+    # Initialize variable
+    tokens = {}
+
+    # Check if SQLite database exists
+    if os.path.isfile("token.db3"):
+        # Create connection to the existing database
+        connection = apsw.Connection(
+            "token.db3", flags=apsw.SQLITE_OPEN_READONLY)
+
+        # Get values
+        for client_id, refresh_token in connection.execute("select client_id, refresh_token from anaplan"):
+            tokens = {"client_id": client_id, "refresh_token": jwt.decode(
+                refresh_token, client_id, algorithms=["HS256"])['refresh_token']}
+
+    else:
+        logger.warning("Database file does not exist")
+        tokens = {"client_id": "empty", "refresh_token": "empty"}
+
+    return tokens
+
+# === Create or update a SQLite database ===
+def write_token_db():
+
+    # Encode
+    encoded_token = jwt.encode(
+        {"refresh_token": AuthToken.Auth.refresh_token}, AuthToken.Auth.client_id, algorithm="HS256")
+    values = (AuthToken.Auth.client_id, encoded_token)
+
+    # Check if SQLite database exists
+    if os.path.isfile("token.db3"):
+        # Create connection to the existing database
+        connection = apsw.Connection(
+            "token.db3", flags=apsw.SQLITE_OPEN_READWRITE)
+        connection.execute("update anaplan set client_id=$client_id, refresh_token=$refresh_token", values)
+    else:
+        # Create a new database
+        connection = apsw.Connection("token.db3")
+        connection.execute("create table if not exists anaplan (client_id, refresh_token)")
+        connection.execute("insert into anaplan values($client_id, $refresh_token)", values)
+
+    logger.info("Tokens updated")

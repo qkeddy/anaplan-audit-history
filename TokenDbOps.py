@@ -1,8 +1,5 @@
 # ===============================================================================
-# Created:        2 Feb 2023
-# Updated:
-# @author:        Quinlan Eddy
-# Description:    Module to read & write records
+# Description:    Module to read & write OAuth token records
 # ===============================================================================
 
 import apsw
@@ -26,9 +23,9 @@ def read_db():
     tokens = {}
 
     # Check if SQLite database exists
-    if os.path.isfile("dbfile.db3"):
+    if os.path.isfile("token.db3"):
         # Create connection to the existing database
-        connection = apsw.Connection("dbfile.db3", flags=apsw.SQLITE_OPEN_READONLY)
+        connection = apsw.Connection("token.db3", flags=apsw.SQLITE_OPEN_READONLY)
 
         # Get values
         for val1, val2 in connection.execute("select val1, val2 from anaplan"):
@@ -49,13 +46,13 @@ def write_db():
     values = (AuthToken.Auth.client_id, encoded_token)
 
     # Check if SQLite database exists
-    if os.path.isfile("dbfile.db3"):
+    if os.path.isfile("token.db3"):
         # Create connection to the existing database
-        connection = apsw.Connection("dbfile.db3", flags=apsw.SQLITE_OPEN_READWRITE)
+        connection = apsw.Connection("token.db3", flags=apsw.SQLITE_OPEN_READWRITE)
         connection.execute("update anaplan set val1=$val1, val2=$val2", values)
     else:
         # Create a new database
-        connection = apsw.Connection("dbfile.db3")
+        connection = apsw.Connection("token.db3")
         connection.execute("create table if not exists anaplan (val1, val2)")
         connection.execute("insert into anaplan values($val1, $val2)", values)
     
