@@ -1,0 +1,45 @@
+﻿eventCode,eventMessage,associatedObjectId,notes
+USR-1,User created,The ID of the created user.,(In Anaplan)
+USR-2,User activated,The ID of the created user.,(In Anaplan)
+USR-3,User enabled,The associated user ID.,(In the tenant)
+USR-4,User disabled,The associated user ID.,(In the tenant)
+USR-5,User updated,The ID of the updated user.,  --
+USR-8,User login success,The ID associated with the user login.,  --
+USR-9,User login failure,The ID associated with the user login.,  --
+USR-10,User logout success,The ID associated with the user logout.,  --
+USR-11,User logout failure,The ID associated with the user logout.,  --
+USR-12,User session timeout,The ID associated with the user who timed out.,  --
+USR-13,"User access to model, success",The associated model ID.,"This message applies when a user successfully: Opens a model in the Manage Models interface, Opens a bookmarked model through a web browser, Selects a model name in Anaplan Home or in the Administration console, Navigates to the source model in the User Experience."
+USR-14,User access-to-model failure,The associated model ID.,"This message applies when a user fails to: Opens a model in the Manage Models interface, Opens a bookmarked model through a web browser, Selects a model name in Anaplan Home or in the Administration console, Navigates to the source model in the User Experience."
+USR-15,User assigned to tenant success,The associated user ID.,  --
+USR-16,User assigned to tenant failure,The associated user ID.,  --
+USR-17,User removed from tenant success,The associated user ID.,  --
+USR-18,User removed from tenant failure,The associated user ID.,  --
+USR-19,User accessed dashboard,The associated model ID.,  --
+USR-20,User executed action,The associated model ID.,  --
+USR-21,User added to workspace,The ID of the added user.,  --
+USR-22,User removed from workspace,The ID of the removed user.,  --
+USR-23,User assigned to a model role,The ID of the user assigned the model role.,"This includes the No Access role. If someone assigns or removes No Access, it is recorded in the audit log."
+USR-24,User unassigned from a model role,The ID of the user unassigned from a role.,"This includes the No Access role. If someone assigns or removes No Access, it is recorded in the audit log."
+USR-25,User assigned or unassigned the Workspace Admin role,The ID associated with the user whose role has changed.,"If someone assigns or removes the Workspace Administrator role, it is recorded in the audit log."
+USR-26,User email updated,The associated user ID.,  --
+USR-27,User first name updated,The associated user ID.,  --
+USR-28,User last name updated,The associated user ID.,  --
+USR-29,User Deleted,The associated user ID.,  --
+USR-30,Visitor added to workspace,The ID of the added visiting user.,  --
+USR-31,Visitor removed from workspace,The ID of the removed visiting user. ,  --
+USR-32,Ad Hoc Data Export,The associated model ID.,  --
+USR-33,Assign,The associated model ID.,An object associated to a corresponding list.
+USR-34,Copy branch,The associated model ID.,  --
+USR-35,Create,The associated model ID.,A create action was made.
+USR-36,Data export from action,The associated model ID.,(Within Anaplan)
+USR-39,Model imported via Manage models ,The associated model ID.,  --
+USR-42,Line Items updated from an import,The associated model ID.,  --
+USR-50,Users updated from an import ,The associated model ID.,  --
+USR-51,List items updated from an import,The associated model ID.,  --
+USR-52,Module data updated from an import,The associated model ID.,  --
+USR-53,Versions items updated from an import,The associated model ID.,  --
+USR-54,Model updated from an import,The associated model ID.,  --
+USR-57,User granted Exception access.,The associated user ID.,  --
+USR-58,Revocation of Exception access.,The associated user ID.,  --
+INT-06,Data Integration execution,  --
