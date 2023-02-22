@@ -3,5 +3,9 @@
     "get_tokens_uri": "https://us1a.app.anaplan.com/oauth/token",
     "get_users_uri": "https://api.anaplan.com/scim/1/0/v2/Users",
     "get_audit_events_uri": "https://audit.anaplan.com/audit/api/1/events?type=all",
-    "get_workspaces_uri": "https://api.anaplan.com/2/0/workspaces?tenantDetails=true"
+    "get_workspaces_uri": "https://api.anaplan.com/2/0/workspaces?tenantDetails=true",
+    "get_imports_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/imports/",
+    "get_exports_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/exports/",
+    "get_actions_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/actions/",
+    "get_processes_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/processes/"
 }
