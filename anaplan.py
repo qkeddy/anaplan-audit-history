@@ -26,6 +26,11 @@ tokens_uri = settings['get_tokens_uri']
 users_uri = settings['get_users_uri']
 audit_events_uri = settings['get_audit_events_uri']
 workspaces_uri = settings['get_workspaces_uri']
+models_uri = settings['get_models_uri']
+imports_uri = settings['get_imports_uri']
+exports_uri = settings['get_exports_uri']
+processes_uri = settings['get_processes_uri']
+actions_uri = settings['get_actions_uri']
 register = args.register
 database_file = "audit.db3"
 AuthToken.Auth.client_id = args.client_id
@@ -34,8 +39,7 @@ if args.token_ttl == "":
 
 # If register flag is set, then request the user to authenticate with Anaplan to create device code
 if register:
-	logger.info('Registering the device with Client ID: %s' %
-	            AuthToken.Auth.client_id)
+	logger.info(f'Registering the device with Client ID: {AuthToken.Auth.client_id}')
 	AnaplanOauth.get_device_id(device_id_uri)
 	AnaplanOauth.get_tokens(tokens_uri)
 
@@ -56,23 +60,27 @@ AnaplanOps.get_usr_activity_codes(database_file=database_file)
 AnaplanOps.get_users(users_uri, database_file)
 
 # Get Workspaces
-AnaplanOps.get_anaplan_paged_data(uri=workspaces_uri, token_type="Bearer ", database_file=database_file,
+workspace_ids = AnaplanOps.get_anaplan_paged_data(uri=workspaces_uri, token_type="Bearer ", database_file=database_file,
                                   database_table="workspaces", record_path="workspaces", json_path=['meta', 'paging', 'next'])
 
 # Get Models in all Workspace
+for ws_id in workspace_ids:
+	model_ids = AnaplanOps.get_anaplan_paged_data(uri=models_uri.replace('{{workspace_id}}', ws_id), token_type="Bearer ", database_file=database_file,
+                                         database_table="models", record_path="models", json_path=['meta', 'paging', 'next'])
 
-# Get Import Actions in all Models in all Workspaces
+	# Loop through each Model to get details
+	for mod_id in model_ids:
+		# Get Import Actions in all Models in all Workspaces
+		AnaplanOps.get_anaplan_paged_data(uri=imports_uri.replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
+									database_table="actions", record_path="imports", json_path=['meta', 'paging', 'next'])
 
-# Get Export Actions in all Models in all Workspaces
+		# Get Import Actions in all Models in all Workspaces
+		AnaplanOps.get_anaplan_paged_data(uri=exports_uri.replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
+                                    database_table="actions", record_path="exports", json_path=['meta', 'paging', 'next'])
 
-# Get Process in all Models in all Workspaces
-
-# Get Actions in all Models in all Workspaces
-
-
-# Get Import Actions
-AnaplanOps.get_anaplan_paged_data(uri=workspaces_uri, token_type="Bearer ", database_file=database_file,
-                                  database_table="actions", record_path="imports", json_path=['meta', 'paging', 'next'])
+		# Get Import Processes in all Models in all Workspaces
+		AnaplanOps.get_anaplan_paged_data(uri=processes_uri.replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
+                                    database_table="actions", record_path="processes", json_path=['meta', 'paging', 'next'])
 
 # Get Events
 AnaplanOps.get_anaplan_paged_data(uri=audit_events_uri, token_type="AnaplanAuthToken ", database_file=database_file,

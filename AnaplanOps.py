@@ -15,7 +15,7 @@ import StatusExceptions
 # ===  Load user activity codes from file  ===
 def get_usr_activity_codes(database_file):
     df = pd.read_csv('activity_events.csv')
-    update_table(database_file=database_file, table="act_codes", df=df)
+    update_table(database_file=database_file, table="act_codes", df=df, mode='replace')
 
 
 # ===  Get Users Function  ===
@@ -33,9 +33,9 @@ def get_users(uri, database_file):
 
         data = json.loads(res.text)
         df = pd.json_normalize(data, record_path='Resources')
-        columns = df[['id', 'userName', 'displayName']]
+        df = df[['id', 'userName', 'displayName']]
 
-        update_table(database_file=database_file, table="users", df=columns)
+        update_table(database_file=database_file, table="users", df=df, mode='replace')
 
         logging.info("List of users received")
 
@@ -51,10 +51,9 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, recor
         'Accept': 'application/json',
         'Authorization': token_type + AuthToken.Auth.access_token
     }
-    
     res = None
-
     count = 1 
+
     try:
         # Initial endpoint query
         print(uri)
@@ -82,20 +81,43 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, recor
                 # Stop looping when key cannot be found
                 break
 
+            except AttributeError:
+                break
+
             except:
                 # Check status codes
                 StatusExceptions.process_status_exceptions(res, uri)
 
-        update_table(database_file=database_file, table=database_table, df=df)
+        # Drop unsupported SQLite columns from Data Frames
+        match database_table:
+            case "models": 
+                df = df.drop(columns=['categoryValues'])
+                update_table(database_file=database_file, table=database_table, df=df, mode='append')
+            case "imports" | "exports" | "processes" | "actions":
+                df = df[['id', 'name']]
+                update_table(database_file=database_file, table=database_table, df=df, mode='append')
+            case _:
+                update_table(database_file=database_file, table=database_table, df=df, mode='replace')
+        
         logging.info(f'{total_size} {database_table} records received with {count} API call(s)')
         print(f'{total_size} {database_table} records received with {count} API call(s)')
+
+        # Return IDs for future iterations
+        return df['id'].tolist()
         
+    except KeyError:
+        # Notification when no data is available for a particular API call 
+        logging.info(
+            f'API call successful, but no {record_path} are available in the Workspace/Model combination. Alternatively, please check the {record_path} KeyPath.')
+        print(
+            f'API call successful, but no {record_path} are available in the Workspace/Model combination. Alternatively, please check the {record_path} KeyPath.')
+  
     except:
         # Check status codes
         StatusExceptions.process_status_exceptions(res, uri)
 
 
-def update_table(database_file, table, df):
+def update_table(database_file, table, df, mode):
     connection = sqlite3.Connection(database_file)
-    df.to_sql(name=table, con=connection,if_exists='replace', index=False)
+    df.to_sql(name=table, con=connection, if_exists=mode, index=False)
     connection.commit()
