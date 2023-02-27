@@ -5,6 +5,7 @@
 
 import logging
 import json
+import sys
 
 
 # Enable logger
@@ -20,11 +21,12 @@ def process_status_exceptions(res, uri):
         logger.error('%s with URI: %s', json.loads(
             res.text)['error_description'], uri)
     elif res.status_code == 403:
-        logger.error('%s with URI: %s', json.loads(
-            res.text)['error_description'], uri)
+        logger.error('%s error with URI: %s', res.status_code, uri)
     elif res.status_code == 404:
         logger.error('%s with URL: %s', json.loads(
             res.text)['message'], uri)
         logger.error('Please check device code or service URI')
         print('ERROR - Please check logs')
+    
+    sys.exit(1)
 

@@ -119,5 +119,5 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, recor
 
 def update_table(database_file, table, df, mode):
     connection = sqlite3.Connection(database_file)
-    df.to_sql(name=table, con=connection, if_exists=mode, index=False)
+    df.to_sql(name=table, con=connection, if_exists=mode, index=True)
     connection.commit()
