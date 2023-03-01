@@ -31,6 +31,7 @@ imports_uri = settings['get_imports_uri']
 exports_uri = settings['get_exports_uri']
 processes_uri = settings['get_processes_uri']
 actions_uri = settings['get_actions_uri']
+cloudworks_uri = settings['get_cloudworks_uri']
 register = args.register
 database_file = "audit.db3"
 AuthToken.Auth.client_id = args.client_id
@@ -72,15 +73,21 @@ for ws_id in workspace_ids:
 	for mod_id in model_ids:
 		# Get Import Actions in all Models in all Workspaces
 		AnaplanOps.get_anaplan_paged_data(uri=imports_uri.replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-									database_table="actions", record_path="imports", json_path=['meta', 'paging', 'next'])
+									database_table="actions", record_path="imports", json_path=['meta', 'paging', 'next'], workspace_id=ws_id, model_id=mod_id)
 
 		# Get Import Actions in all Models in all Workspaces
 		AnaplanOps.get_anaplan_paged_data(uri=exports_uri.replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-                                    database_table="actions", record_path="exports", json_path=['meta', 'paging', 'next'])
+                                    database_table="actions", record_path="exports", json_path=['meta', 'paging', 'next'], workspace_id=ws_id, model_id=mod_id)
 
 		# Get Import Processes in all Models in all Workspaces
 		AnaplanOps.get_anaplan_paged_data(uri=processes_uri.replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-                                    database_table="actions", record_path="processes", json_path=['meta', 'paging', 'next'])
+                                    database_table="actions", record_path="processes", json_path=['meta', 'paging', 'next'], workspace_id=ws_id, model_id=mod_id)
+
+# Get CloudWorks Integrations
+# TODO - adjust paging as this endpoint uses a different approach
+AnaplanOps.get_anaplan_paged_data(uri=cloudworks_uri, token_type="AnaplanAuthToken ", database_file=database_file,
+                                  database_table="cloudworks", record_path="integrations", json_path=['meta', 'paging', 'nextUrl'])
+
 
 # Get Events
 AnaplanOps.get_anaplan_paged_data(uri=audit_events_uri, token_type="AnaplanAuthToken ", database_file=database_file,

@@ -45,7 +45,7 @@ def get_users(uri, database_file):
 
 
 # ===  Get Anaplan Paged Data  ===
-def get_anaplan_paged_data(uri, token_type, database_file, database_table, record_path, json_path):
+def get_anaplan_paged_data(uri, token_type, database_file, database_table, record_path, json_path, workspace_id=None, model_id=None):
     get_headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -91,11 +91,20 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, recor
         # Drop unsupported SQLite columns from Data Frames
         match database_table:
             case "models": 
+                # TODO add logic to drop model tables
                 df = df.drop(columns=['categoryValues'])
                 update_table(database_file=database_file, table=database_table, df=df, mode='append')
             case "imports" | "exports" | "processes" | "actions":
                 df = df[['id', 'name']]
+                data = {'workspace_id': workspace_id, 'model_id': model_id }
+                df = df.assign(**data)
                 update_table(database_file=database_file, table=database_table, df=df, mode='append')
+            case "cloudworks":
+                # print(df)
+                df = df.drop(columns=['schedule.daysOfWeek'])
+                # print ('-------------------')
+                # print(df)
+                update_table(database_file=database_file, table=database_table, df=df, mode='replace')
             case _:
                 update_table(database_file=database_file, table=database_table, df=df, mode='replace')
         

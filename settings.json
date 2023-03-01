@@ -8,5 +8,6 @@
     "get_imports_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/imports/",
     "get_exports_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/exports/",
     "get_actions_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/actions/",
-    "get_processes_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/processes/"
+    "get_processes_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/processes/",
+    "get_cloudworks_uri": "https://api.cloudworks.anaplan.com/2/0/integrations"
 }
