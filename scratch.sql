@@ -1,4 +1,4 @@
-SELECT *  FROM events e  WHERE e."additionalAttributes.actionId" = 116000000000 ;
+SELECT *  FROM events e;  WHERE e."additionalAttributes.actionId" = 116000000000 ;
 
 SELECT count(*) FROM events e ;
 
@@ -20,7 +20,6 @@ left JOIN users u ON e.userId = u.id;
 
 SELECT 
 	printf("%.0f", e.eventDate / 1000) || printf("%06d", e.[index] ) as LOAD_ID ,
-	printf("%06d", e.[index]) as "INDEX" ,
 	e.id as AUDIT_ID , 
 	e.eventTypeId as EVENT_ID , 
 	ac.[Event Message] as EVENT_MESSAGE , 
@@ -91,7 +90,6 @@ LEFT JOIN workspaces w ON e."additionalAttributes.workspaceId" = w.id
 LEFT JOIN models m ON e."additionalAttributes.modelId" = m.id 
 LEFT JOIN models m2 ON e.objectId = m2.id
 LEFT JOIN cloudworks cw on e.objectId = cw.integrationId 
---LEFT JOIN cloudworks c on m.id = c.modelId  
 LEFT JOIN act_codes ac on e.eventTypeId = ac.[Event Code]
 LEFT JOIN actions a on e."additionalAttributes.actionId" || e.objectId  = a.id || a.model_id  ;
 WHERE OBJECT_ID = "81a2d77de57045719b363bf7884fe68c" ;

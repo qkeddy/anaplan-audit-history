@@ -54,6 +54,10 @@ refresh_token = AnaplanOauth.refresh_token_thread(
 	1, name="Refresh Token", delay=AuthToken.Auth.token_ttl, uri=tokens_uri)
 refresh_token.start()
 
+# Drop tables
+AnaplanOps.drop_table(database_file=database_file, table='models')
+AnaplanOps.drop_table(database_file=database_file, table='actions')
+
 # Load User Activity Codes
 AnaplanOps.get_usr_activity_codes(database_file=database_file)
 
@@ -95,4 +99,5 @@ AnaplanOps.get_anaplan_paged_data(uri=audit_events_uri, token_type="AnaplanAuthT
 
 
 # Exit with return code 0
+# TODO check for unmapped USR codes and add log
 sys.exit(0)

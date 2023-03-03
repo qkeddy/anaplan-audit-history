@@ -88,10 +88,9 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, recor
                 # Check status codes
                 StatusExceptions.process_status_exceptions(res, uri)
 
-        # Drop unsupported SQLite columns from Data Frames
+        # Transform Data Frames columns before updating SQLite
         match database_table:
             case "models": 
-                # TODO add logic to drop model tables
                 df = df.drop(columns=['categoryValues'])
                 update_table(database_file=database_file, table=database_table, df=df, mode='append')
             case "imports" | "exports" | "processes" | "actions":
@@ -100,10 +99,7 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, recor
                 df = df.assign(**data)
                 update_table(database_file=database_file, table=database_table, df=df, mode='append')
             case "cloudworks":
-                # print(df)
                 df = df.drop(columns=['schedule.daysOfWeek'])
-                # print ('-------------------')
-                # print(df)
                 update_table(database_file=database_file, table=database_table, df=df, mode='replace')
             case _:
                 update_table(database_file=database_file, table=database_table, df=df, mode='replace')
@@ -127,6 +123,25 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, recor
 
 
 def update_table(database_file, table, df, mode):
+    # Establish connection to SQLite 
     connection = sqlite3.Connection(database_file)
+
+    # Write the contents of Data Frame to the SQLlite table
     df.to_sql(name=table, con=connection, if_exists=mode, index=True)
+
+    # Commit data and close connection
     connection.commit()
+    connection.close()
+
+
+def drop_table(database_file, table):
+    # Establish connection to SQLite
+    connection = sqlite3.Connection(database_file)
+
+    # Create a cursor to perform operations on the database
+    cursor = connection.cursor()
+
+    # Dropping the specified table
+    cursor.execute(f"DROP TABLE {table}")
+    logging.info(f'Table `{table}` has been dropped')
+    print(f'Table `{table}` has been dropped')
