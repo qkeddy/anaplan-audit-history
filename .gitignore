@@ -134,3 +134,4 @@ secret.txt
 auth.json
 workspaces.json
 *.db3
+model_history.csv

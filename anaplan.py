@@ -62,40 +62,40 @@ AnaplanOps.drop_table(database_file=database_file, table='actions')
 AnaplanOps.get_usr_activity_codes(database_file=database_file)
 
 # Get Users
-AnaplanOps.get_users(users_uri, database_file)
+AnaplanOps.get_anaplan_paged_data(uri=users_uri, token_type="Bearer ", database_file=database_file,
+                                  database_table="users", record_path="Resources", page_size_key=['itemsPerPage'], page_index_key=['startIndex'], total_results_key=['totalResults'])
 
 # Get Workspaces
 workspace_ids = AnaplanOps.get_anaplan_paged_data(uri=workspaces_uri, token_type="Bearer ", database_file=database_file,
-                                  database_table="workspaces", record_path="workspaces", json_path=['meta', 'paging', 'next'])
+                                                  database_table="workspaces", record_path="workspaces", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], return_id=True)
 
 # Get Models in all Workspace
 for ws_id in workspace_ids:
 	model_ids = AnaplanOps.get_anaplan_paged_data(uri=models_uri.replace('{{workspace_id}}', ws_id), token_type="Bearer ", database_file=database_file,
-                                         database_table="models", record_path="models", json_path=['meta', 'paging', 'next'])
+                                               database_table="models", record_path="models", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], return_id=True)
 
 	# Loop through each Model to get details
 	for mod_id in model_ids:
 		# Get Import Actions in all Models in all Workspaces
 		AnaplanOps.get_anaplan_paged_data(uri=imports_uri.replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-									database_table="actions", record_path="imports", json_path=['meta', 'paging', 'next'], workspace_id=ws_id, model_id=mod_id)
+									database_table="actions", record_path="imports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 
 		# Get Import Actions in all Models in all Workspaces
 		AnaplanOps.get_anaplan_paged_data(uri=exports_uri.replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-                                    database_table="actions", record_path="exports", json_path=['meta', 'paging', 'next'], workspace_id=ws_id, model_id=mod_id)
+									database_table="actions", record_path="exports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 
 		# Get Import Processes in all Models in all Workspaces
 		AnaplanOps.get_anaplan_paged_data(uri=processes_uri.replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-                                    database_table="actions", record_path="processes", json_path=['meta', 'paging', 'next'], workspace_id=ws_id, model_id=mod_id)
+									database_table="actions", record_path="processes", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 
 # Get CloudWorks Integrations
-# TODO - adjust paging as this endpoint uses a different approach
 AnaplanOps.get_anaplan_paged_data(uri=cloudworks_uri, token_type="AnaplanAuthToken ", database_file=database_file,
-                                  database_table="cloudworks", record_path="integrations", json_path=['meta', 'paging', 'nextUrl'])
+                                  database_table="cloudworks", record_path="integrations", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'])
 
 
 # Get Events
 AnaplanOps.get_anaplan_paged_data(uri=audit_events_uri, token_type="AnaplanAuthToken ", database_file=database_file,
-                                  database_table="events", record_path="response", json_path=['meta', 'paging', 'nextUrl'])
+                                  database_table="events", record_path="response", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offSet'], total_results_key=['meta', 'paging', 'totalSize'])
 
 
 # Exit with return code 0

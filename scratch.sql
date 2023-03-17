@@ -20,17 +20,17 @@ left JOIN users u ON e.userId = u.id;
 
 SELECT 
 	printf("%.0f", e.eventDate / 1000) || printf("%06d", e.[index] ) as LOAD_ID ,
-	e.id as AUDIT_ID , 
+	--e.id as AUDIT_ID , 
 	e.eventTypeId as EVENT_ID , 
 	ac.[Event Message] as EVENT_MESSAGE , 
 	ac.[Associated Object Id] as ASSOCIATED_OBJECT_ID, 
-	ac.Notes as NOTES , 
+	--ac.Notes as NOTES , 
 	e.userId as USER_ID , 
 	u.userName as USER_NAME , 
-	u.displayName as DISPLAY_NAME , 
-	e.tenantId as TENANT_ID , 
-	"Quin Eddy Employee Tenant" as TENANT_NAME , 
-	e."additionalAttributes.workspaceId" as WORKSPACE_ID , 
+	--u.displayName as DISPLAY_NAME , 
+	--e.tenantId as TENANT_ID , 
+	--"Quin Eddy Employee Tenant" as TENANT_NAME , 
+	--e."additionalAttributes.workspaceId" as WORKSPACE_ID , 
 	w.name as WORKSPACE_NAME ,
 	CASE 
 		WHEN e."additionalAttributes.modelId" IS NOT NULL THEN e."additionalAttributes.modelId"
@@ -54,11 +54,11 @@ SELECT
 	e.message as MESSAGE , 
 	e.success as SUCCESS, 
 	e.errorNumber as ERROR_NUMBER , 
-	e.ipAddress as IP_ADDRESS , 
-	e.userAgent as USER_AGENT , 
-	e.sessionId as SESSION_ID , 
-	e.hostName as HOST_NAME , 
-	e.serviceVersion as SERVICE_VERSION , 
+	--e.ipAddress as IP_ADDRESS , 
+	--e.userAgent as USER_AGENT , 
+	--e.sessionId as SESSION_ID , 
+	--e.hostName as HOST_NAME , 
+	--e.serviceVersion as SERVICE_VERSION , 
 	datetime(e.eventDate/1000 , 'unixepoch') as EVENT_DATE ,
 	e.eventTimeZone as EVENT_TIMEZONE , 
 	datetime(e.createdDate/1000 , 'unixepoch') as CREATED_DATE ,
@@ -91,8 +91,8 @@ LEFT JOIN models m ON e."additionalAttributes.modelId" = m.id
 LEFT JOIN models m2 ON e.objectId = m2.id
 LEFT JOIN cloudworks cw on e.objectId = cw.integrationId 
 LEFT JOIN act_codes ac on e.eventTypeId = ac.[Event Code]
-LEFT JOIN actions a on e."additionalAttributes.actionId" || e.objectId  = a.id || a.model_id  ;
-WHERE OBJECT_ID = "81a2d77de57045719b363bf7884fe68c" ;
+LEFT JOIN actions a on e."additionalAttributes.actionId" || e.objectId  = a.id || a.model_id
+WHERE OBJECT_name = "stauffjc+qeddytenant@gmail.com" ;
 
 
 
