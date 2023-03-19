@@ -7,7 +7,7 @@ import logging
 
 import utils
 import AnaplanOauth
-import AuthToken
+import Globals
 import AnaplanOps
 
 # Clear the console
@@ -31,16 +31,17 @@ imports_uri = settings['get_imports_uri']
 exports_uri = settings['get_exports_uri']
 processes_uri = settings['get_processes_uri']
 actions_uri = settings['get_actions_uri']
+files_uri = settings['get_files_uri']
 cloudworks_uri = settings['get_cloudworks_uri']
 register = args.register
 database_file = "audit.db3"
-AuthToken.Auth.client_id = args.client_id
+Globals.Auth.client_id = args.client_id
 if args.token_ttl == "":
-	AuthToken.Auth.token_ttl = int(args.token_ttl)
+	Globals.Auth.token_ttl = int(args.token_ttl)
 
 # If register flag is set, then request the user to authenticate with Anaplan to create device code
 if register:
-	logger.info(f'Registering the device with Client ID: {AuthToken.Auth.client_id}')
+	logger.info(f'Registering the device with Client ID: {Globals.Auth.client_id}')
 	AnaplanOauth.get_device_id(device_id_uri)
 	AnaplanOauth.get_tokens(tokens_uri)
 
@@ -51,12 +52,13 @@ else:
 
 # Start background thread to refresh the `access_token`
 refresh_token = AnaplanOauth.refresh_token_thread(
-	1, name="Refresh Token", delay=AuthToken.Auth.token_ttl, uri=tokens_uri)
+	1, name="Refresh Token", delay=Globals.Auth.token_ttl, uri=tokens_uri)
 refresh_token.start()
 
 # Drop tables
 AnaplanOps.drop_table(database_file=database_file, table='models')
 AnaplanOps.drop_table(database_file=database_file, table='actions')
+AnaplanOps.drop_table(database_file=database_file, table='files')
 
 # Load User Activity Codes
 AnaplanOps.get_usr_activity_codes(database_file=database_file)
@@ -80,24 +82,38 @@ for ws_id in workspace_ids:
 		AnaplanOps.get_anaplan_paged_data(uri=imports_uri.replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
 									database_table="actions", record_path="imports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 
-		# Get Import Actions in all Models in all Workspaces
+		# Get Export Actions in all Models in all Workspaces
 		AnaplanOps.get_anaplan_paged_data(uri=exports_uri.replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
 									database_table="actions", record_path="exports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 
-		# Get Import Processes in all Models in all Workspaces
+		# Get Processes in all Models in all Workspaces
 		AnaplanOps.get_anaplan_paged_data(uri=processes_uri.replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
 									database_table="actions", record_path="processes", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+		
+		# Get Files in all Models in all Workspaces
+		AnaplanOps.get_anaplan_paged_data(uri=files_uri.replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
+                                    database_table="files", record_path="files", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 
 # Get CloudWorks Integrations
 AnaplanOps.get_anaplan_paged_data(uri=cloudworks_uri, token_type="AnaplanAuthToken ", database_file=database_file,
                                   database_table="cloudworks", record_path="integrations", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'])
-
 
 # Get Events
 AnaplanOps.get_anaplan_paged_data(uri=audit_events_uri, token_type="AnaplanAuthToken ", database_file=database_file,
                                   database_table="events", record_path="response", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offSet'], total_results_key=['meta', 'paging', 'totalSize'])
 
 
+# Fetch Ids for target Workspace, Model, File_ID, and Import Action
+AnaplanOps.fetch_ids(database_file=database_file,
+                     obj_list=[[settings['get_target_workspace'], 'workspaces'],
+                               [settings['get_target_model'], 'models'],
+                               [settings['get_target_import_action'], 'actions'],
+                               [settings['get_target_import_file'], 'files']])
+
+
+AnaplanOps.upload_records_to_anaplan(database_file=database_file)
+
+
+
 # Exit with return code 0
-# TODO check for unmapped USR codes and add log
 sys.exit(0)

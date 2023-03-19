@@ -9,5 +9,10 @@
     "get_exports_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/exports/",
     "get_actions_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/actions/",
     "get_processes_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/processes/",
-    "get_cloudworks_uri": "https://api.cloudworks.anaplan.com/2/0/integrations"
+    "get_files_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/files/",
+    "get_cloudworks_uri": "https://api.cloudworks.anaplan.com/2/0/integrations",
+    "get_target_workspace": "Workspace #1",
+    "get_target_model": "Audit Report",
+    "get_target_import_file": "Model History03142023.txt",
+    "get_target_import_action": "UPDATE AUDIT LOG"
 }

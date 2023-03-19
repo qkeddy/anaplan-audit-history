@@ -12,7 +12,7 @@ import threading
 import apsw
 import apsw.ext
 import jwt
-import AuthToken
+import Globals
 import StatusExceptions
 
 
@@ -34,7 +34,7 @@ def get_device_id(uri):
 
     # Set Body
     get_body = {
-        "client_id": AuthToken.Auth.client_id,
+        "client_id": Globals.Auth.client_id,
         "scope": "openid profile email offline_access"
     }
     res = None
@@ -47,7 +47,7 @@ def get_device_id(uri):
         j_res = json.loads(res.text)
 
         # Set values
-        AuthToken.Auth.device_code = j_res['device_code']
+        Globals.Auth.device_code = j_res['device_code']
         logger.info("Device Code successfully received")
 
         # Pause for user authentication
@@ -70,8 +70,8 @@ def get_tokens(uri):
 
     # Set Body
     get_body = {
-        "client_id": AuthToken.Auth.client_id,
-        "device_code": AuthToken.Auth.device_code,
+        "client_id": Globals.Auth.client_id,
+        "device_code": Globals.Auth.device_code,
         "grant_type": "urn:ietf:params:oauth:grant-type:device_code"
     }
     res = None
@@ -84,8 +84,8 @@ def get_tokens(uri):
         j_res = json.loads(res.text)
 
         # Set values in AuthToken Dataclass
-        AuthToken.Auth.access_token = j_res['access_token']
-        AuthToken.Auth.refresh_token = j_res['refresh_token']
+        Globals.Auth.access_token = j_res['access_token']
+        Globals.Auth.refresh_token = j_res['refresh_token']
         logger.info("Access Token and Refresh Token received")
 
         # Persist token values
@@ -100,7 +100,7 @@ def get_tokens(uri):
 # Response returns an updated `access_token` and `refresh_token`
 def refresh_tokens(uri, delay):
     # If the refresh_token is not available then read from `auth.json`
-    if AuthToken.Auth.refresh_token == "none":
+    if Globals.Auth.refresh_token == "none":
         tokens = read_token_db()
 
         if tokens['client_id'] == "empty":
@@ -109,8 +109,8 @@ def refresh_tokens(uri, delay):
             # Exit with return code 1
             sys.exit(1)
 
-        AuthToken.Auth.client_id = tokens['client_id']
-        AuthToken.Auth.refresh_token = tokens['refresh_token']
+        Globals.Auth.client_id = tokens['client_id']
+        Globals.Auth.refresh_token = tokens['refresh_token']
 
     get_headers = {
         'Content-Type': 'application/json',
@@ -124,8 +124,8 @@ def refresh_tokens(uri, delay):
     # As this is a daemon thread, keep looping until main thread ends
     while True:
         get_body = {
-            "client_id": AuthToken.Auth.client_id,
-            "refresh_token": AuthToken.Auth.refresh_token,
+            "client_id": Globals.Auth.client_id,
+            "refresh_token": Globals.Auth.refresh_token,
             "grant_type": "refresh_token"
         }
         res = None
@@ -139,8 +139,8 @@ def refresh_tokens(uri, delay):
             j_res = json.loads(res.text)
 
             # Set values in AuthToken Dataclass
-            AuthToken.Auth.access_token = j_res['access_token']
-            AuthToken.Auth.refresh_token = j_res['refresh_token']
+            Globals.Auth.access_token = j_res['access_token']
+            Globals.Auth.refresh_token = j_res['refresh_token']
             logger.info("Updated Access Token and Refresh Token received")
 
             # Persist token values
@@ -211,8 +211,8 @@ def write_token_db():
 
     # Encode
     encoded_token = jwt.encode(
-        {"refresh_token": AuthToken.Auth.refresh_token}, AuthToken.Auth.client_id, algorithm="HS256")
-    values = (AuthToken.Auth.client_id, encoded_token)
+        {"refresh_token": Globals.Auth.refresh_token}, Globals.Auth.client_id, algorithm="HS256")
+    values = (Globals.Auth.client_id, encoded_token)
 
     # Check if SQLite database exists
     if os.path.isfile("token.db3"):
