@@ -111,9 +111,18 @@ AnaplanOps.fetch_ids(database_file=database_file,
                                [settings['get_target_import_file'], 'files']])
 
 
-AnaplanOps.upload_records_to_anaplan(database_file=database_file)
+AnaplanOps.upload_records_to_anaplan(database_file=database_file, token_type="Bearer ")
 
 
 
 # Exit with return code 0
 sys.exit(0)
+
+
+# Driver function
+# if __name__ == '__main__':
+
+# 	app.run(debug=True)
+
+# if __name__ == '__main__':
+#     main()

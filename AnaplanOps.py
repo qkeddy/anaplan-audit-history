@@ -164,14 +164,7 @@ def drop_table(database_file, table):
 
 
 # === Query and Load data to Anaplan  ===
-# 1) Query Database and get record count
-# 2) Divide 
-# 2) Query 15,000 records to create approximately 10MB chunks
-# 3) DO While record_index + record_chunk < total_record_count:
-# 4) Query with LIMIT
-# 5) PUT chunk into Anaplan
-# 6) When complete use the `complete` verb
-def upload_records_to_anaplan(database_file, chunk_size=15000):
+def upload_records_to_anaplan(database_file, token_type, chunk_size=15000):
     # Open SQL File in read mode
     sql_file = open("./audit_query.sql", "r")
 
@@ -194,32 +187,62 @@ def upload_records_to_anaplan(database_file, chunk_size=15000):
 
         # Get the number of chunks and set the Anaplan File Chunk Count
         chunk_count = math.ceil(record_count / chunk_size)
+        body = {'chunkCount': chunk_count}
+        uri = f'https://api.anaplan.com/2/0/workspaces/{Globals.Ids.workspace_id}/models/{Globals.Ids.model_id}/files/{Globals.Ids.file_id}'
+        res = requests.post(uri, json=body, headers={
+            'Content-Type': 'application/json',
+            'Authorization': token_type + Globals.Auth.access_token
+        })
         print(f'{record_count} records will be uploaded in {chunk_count} chunks')
         logging.info(f'{record_count} records will be uploaded in {chunk_count} chunks')
-        # TODO set Anaplan Chunk Count
 
-        # Fetch records and upload to Anaplan
+        # Fetch records and upload to Anaplan by chunk
         count = 0
         while count < chunk_count:
             # Set offset and query chunk
             offset = chunk_size * count
             cursor.execute(f'{sql} \nLIMIT {chunk_size} OFFSET {offset};')
-            rows = cursor.fetchall()
+
+            # Convert query to Pandas Data Frame
+            df = pd.DataFrame(cursor.fetchall())
+            chunk_row_count = len(df.index)
+
+            # Convert data frame to CSV with no index and if first chunk include the headers 
+            if count == 0:
+                df.columns = [desc[0] for desc in cursor.description]
+                csv_record_set = df.to_csv(index=False)
+            else:
+                csv_record_set = df.to_csv(index=False, header=False)
 
             # Upload to Anaplan
-            # TODO upload to Anaplan
+            uri = f'https://api.anaplan.com/2/0/workspaces/{Globals.Ids.workspace_id}/models/{Globals.Ids.model_id}/files/{Globals.Ids.file_id}/chunks/{count}'
+            res = requests.put(uri, data=csv_record_set, headers={
+                'Content-Type': 'application/octet-stream',
+                'Authorization': token_type + Globals.Auth.access_token
+            })
 
-
-            print(f'Uploaded: {len(rows)}')
-            logging.info(f'Uploaded: {len(rows)}')
+            if res.status_code == 204:
+                print(f'Uploaded: {chunk_row_count} records to XXX')
+                logging.info(f'Uploaded: {chunk_row_count} records to XXX')
+            else:
+                raise ValueError(f'Failed to upload chunk. Check network connection')
 
             count +=1
         
-    except:
-        logging.error(f'SQL syntax error')
-        print(f'SQL syntax error')
+    except ValueError as ve:
+        logging.error(ve)
+        print(ve)
+
+    except sqlite3.Error as err:
+        print(f'SQL error: {err.args} /  SQL Statement: {sql}')
+        logging.error(f'SQL error: {err.args} /  SQL Statement: {sql}')
+
+    except Exception as err:
+        logging.error(f'{err} in function {upload_records_to_anaplan.__name__}')
+        print(f'{err} in function {upload_records_to_anaplan.__name__}')
 
 
+# === Fetch Anaplan object IDs used for uploading data to Anaplan  ===
 def fetch_ids(database_file, obj_list):
     # Establish connection to SQLite
     connection = sqlite3.Connection(database_file)
