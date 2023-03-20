@@ -76,15 +76,13 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, recor
                     case 0: page_index = res[page_index_key[0]]
                     case 3: page_index = res[page_index_key[0]][page_index_key[1]][page_index_key[2]]
 
-            except KeyError:
-                    # Stop looping when key cannot be found
+            except KeyError | AttributeError as err:
+                print(err)
                 break
 
-            except AttributeError:
-                break
-
-            except:
+            except Exception as err:
                 # Check status codes
+                print(err)
                 StatusExceptions.process_status_exceptions(res, uri)
 
         # Transform Data Frames columns before updating SQLite
@@ -127,8 +125,9 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, recor
         print(
             f'API call successful, but no {record_path} are available in the Workspace/Model combination. Alternatively, please check the "{record_path}" KeyPath.')
 
-    except:
+    except Exception as err:
         # Check status codes
+        print(err)
         StatusExceptions.process_status_exceptions(res, uri)
 
 
