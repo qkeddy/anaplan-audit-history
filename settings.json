@@ -1,18 +1,75 @@
 {
+    "database": "audit.db3",
     "get_device_id_uri": "https://us1a.app.anaplan.com/oauth/device/code",
     "get_tokens_uri": "https://us1a.app.anaplan.com/oauth/token",
-    "get_users_uri": "https://api.anaplan.com/scim/1/0/v2/Users",
-    "get_audit_events_uri": "https://audit.anaplan.com/audit/api/1/events?type=all",
-    "get_workspaces_uri": "https://api.anaplan.com/2/0/workspaces?tenantDetails=true",
-    "get_models_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models?modelDetails=true",
-    "get_imports_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/imports/",
-    "get_exports_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/exports/",
-    "get_actions_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/actions/",
-    "get_processes_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/processes/",
-    "get_files_uri": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/files/",
-    "get_cloudworks_uri": "https://api.cloudworks.anaplan.com/2/0/integrations",
-    "get_target_workspace": "Workspace #1",
-    "get_target_model": "Audit Report",
-    "get_target_import_file": "AUDIT_DATA",
-    "get_target_import_action": "UPDATE_AUDIT_LOG"
+
+    "uris": {
+        "deviceId": "https://us1a.app.anaplan.com/oauth/device/code",
+        "tokens": "https://us1a.app.anaplan.com/oauth/token",
+        "users": "https://api.anaplan.com/scim/1/0/v2/Users",
+        "auditEvents": "https://audit.anaplan.com/audit/api/1/events?type=all",
+        "workspaces": "https://api.anaplan.com/2/0/workspaces?tenantDetails=true",
+        "models": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models?modelDetails=true",
+        "imports": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/imports/",
+        "exports": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/exports/",
+        "actions": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/actions/",
+        "processes": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/processes/",
+        "files": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/files/",
+        "cloudWorks": "https://api.cloudworks.anaplan.com/2/0/integrations"
+    },
+
+    "targetAnaplanModel": {
+        "workspace": "Workspace #1",
+        "model": "Audit Report",
+        "targetModelObjects": {
+            "activityCodesData": {
+                "importFile": "ACTIVITY_CODES.csv",
+                "importAction": "IMPORT_ACTIVITY_CODES",
+                "table": "act_codes",
+                "mode": "replace"
+            },
+            "usersData": {
+                "importFile": "USER_LIST.csv",
+                "importAction": "IMPORT_USER_LIST",
+                "table": "users",
+                "mode": "replace"
+            },
+            "workspacesData": {
+                "importFile": "WORKSPACE_LIST.csv",
+                "importAction": "IMPORT_WORKSPACE_LIST",
+                "table": "workspaces",
+                "mode": "replace"
+            },
+            "modelsData": {
+                "importFile": "MODEL_LIST.csv",
+                "importAction": "IMPORT_MODEL_LIST",
+                "table": "models",
+                "mode": "append"
+            },
+            "actionsData": {
+                "importFile": "ACTION_LIST.csv",
+                "importAction": "IMPORT_ACTION_LIST",
+                "table": "actions",
+                "mode": "append"
+            },
+            "filesData": {
+                "importFile": "FILE_LIST.csv",
+                "importAction": "IMPORT_FILE_LIST",
+                "table": "files",
+                "mode": "append"
+            },
+            "cloudWorksData": {
+                "importFile": "CLOUDWORKS_LIST.csv",
+                "importAction": "IMPORT_CLOUDWORKS_LIST",
+                "table": "cloudworks",
+                "mode": "replace"
+            },
+            "auditData": {
+                "importFile": "AUDIT_LOG.csv",
+                "importAction": "IMPORT_AUDIT_LOG",
+                "table": "events",
+                "mode": "replace"
+            }
+        }
+    }
 }

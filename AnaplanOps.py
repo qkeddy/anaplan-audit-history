@@ -13,7 +13,7 @@ import StatusExceptions
 
 
 # ===  Load user activity codes from file  ===
-def get_usr_activity_codes(database_file):
+def get_usr_activity_codes(database_file, table, mode):
     df = pd.read_csv('activity_events.csv')
     update_table(database_file=database_file, table="act_codes", df=df, mode='replace')
 
@@ -163,7 +163,7 @@ def drop_table(database_file, table):
 
 
 # === Query and Load data to Anaplan  ===
-def upload_records_to_anaplan(database_file, token_type, chunk_size=15000):
+def upload_records_to_anaplan(database_file, token_type, chunk_size=15000, **kwargs):
     # Open SQL File in read mode
     sql_file = open("./audit_query.sql", "r")
 
@@ -187,13 +187,13 @@ def upload_records_to_anaplan(database_file, token_type, chunk_size=15000):
         # Get the number of chunks and set the Anaplan File Chunk Count
         chunk_count = math.ceil(record_count / chunk_size)
         body = {'chunkCount': chunk_count}
-        uri = f'https://api.anaplan.com/2/0/workspaces/{Globals.Ids.workspace_id}/models/{Globals.Ids.model_id}/files/{Globals.Ids.file_id}'
+        uri = f'https://api.anaplan.com/2/0/workspaces/{kwargs["workspace_id"]}/models/{kwargs["model_id"]}/files/{kwargs["file_id"]}'
         res = requests.post(uri, json=body, headers={
             'Content-Type': 'application/json',
             'Authorization': token_type + Globals.Auth.access_token
         })
-        print(f'{record_count} records will be uploaded in {chunk_count} chunks')
-        logging.info(f'{record_count} records will be uploaded in {chunk_count} chunks')
+        print(f'{record_count} records will be uploaded in {chunk_count} chunks to {kwargs["file_name"]}')
+        logging.info(f'{record_count} records will be uploaded in {chunk_count} chunks to {kwargs["file_name"]}')
 
         # Fetch records and upload to Anaplan by chunk
         count = 0
@@ -214,19 +214,22 @@ def upload_records_to_anaplan(database_file, token_type, chunk_size=15000):
                 csv_record_set = df.to_csv(index=False, header=False)
 
             # Upload to Anaplan
-            uri = f'https://api.anaplan.com/2/0/workspaces/{Globals.Ids.workspace_id}/models/{Globals.Ids.model_id}/files/{Globals.Ids.file_id}/chunks/{count}'
+            uri = f'https://api.anaplan.com/2/0/workspaces/{kwargs["workspace_id"]}/models/{kwargs["model_id"]}/files/{kwargs["file_id"]}/chunks/{count}'
             res = requests.put(uri, data=csv_record_set, headers={
                 'Content-Type': 'application/octet-stream',
                 'Authorization': token_type + Globals.Auth.access_token
             })
 
             if res.status_code == 204:
-                print(f'Uploaded: {chunk_row_count} records to XXX')
-                logging.info(f'Uploaded: {chunk_row_count} records to XXX')
+                print(f'Uploaded: {chunk_row_count} records to "{kwargs["file_name"]}"')
+                logging.info(f'Uploaded: {chunk_row_count} records to "{kwargs["file_name"]}"')
             else:
                 raise ValueError(f'Failed to upload chunk. Check network connection')
 
             count +=1
+        
+        # Close SQLite connection
+        connection.close()
         
     except ValueError as ve:
         logging.error(ve)
@@ -242,7 +245,7 @@ def upload_records_to_anaplan(database_file, token_type, chunk_size=15000):
 
 
 # === Fetch Anaplan object IDs used for uploading data to Anaplan  ===
-def fetch_ids(database_file, obj_list):
+def fetch_ids(database_file, **kwargs):
     # Establish connection to SQLite
     connection = sqlite3.Connection(database_file)
 
@@ -253,42 +256,48 @@ def fetch_ids(database_file, obj_list):
     sql = ""
 
     # For each object execute specific SQL to identify the ID
+    id = ""
     try:
-        for obj in obj_list:
-            match obj[1]:
-                case 'workspaces':
-                    sql = f'SELECT w.id FROM workspaces w where w.name = "{obj[0]}";'
-                    cursor.execute(sql)
-                    row = cursor.fetchone()
-                    if row is None: raise ValueError(f'"{obj[0]}" is an invalid {obj[1]} name.')
-                    Globals.Ids.workspace_id = row[0]
-                    print(f'Found Workspace "{obj[0]}" with the ID "{Globals.Ids.workspace_id}"')
-                    logging.info(f'Found Workspace "{obj[0]}" with the ID "{Globals.Ids.workspace_id}"')
-                case 'models':
-                    sql = f'SELECT m.id from models m  WHERE m.currentWorkspaceId = "{Globals.Ids.workspace_id}" AND m.name = "{obj[0]}";'
-                    cursor.execute(sql)
-                    row = cursor.fetchone()
-                    if row is None: raise ValueError(f'"{obj[0]}" is an invalid {obj[1]} name.')
-                    Globals.Ids.model_id = row[0]
-                    print(f'Found Model "{obj[0]}" with the ID "{Globals.Ids.model_id}"')
-                    logging.info(f'Found Model "{obj[0]}" with the ID "{Globals.Ids.model_id}"')
-                case 'actions':
-                    sql = f'SELECT a.id FROM actions a WHERE a.workspace_id="{Globals.Ids.workspace_id}" AND a.model_id="{Globals.Ids.model_id}" AND a.name="{obj[0]}";'
-                    cursor.execute(sql)
-                    row = cursor.fetchone()
-                    if row is None: raise ValueError(f'"{obj[0]}" is an invalid {obj[1]} name.    {sql}')
-                    cursor.execute(sql)
-                    Globals.Ids.import_action_id = row[0]
-                    print( f'Found Import Action "{obj[0]}" with the ID "{Globals.Ids.import_action_id}"')
-                    logging.info(f'Found Import Action "{obj[0]}" with the ID "{Globals.Ids.import_action_id}"')
-                case 'files':
-                    sql = f'SELECT f.id FROM files f WHERE f.workspace_id="{Globals.Ids.workspace_id}" AND f.model_id="{Globals.Ids.model_id}" AND f.name="{obj[0]}";'
-                    cursor.execute(sql)
-                    row = cursor.fetchone()
-                    if row is None: raise ValueError(f'"{obj[0]}" is an invalid {obj[1]} name.  {sql}')
-                    Globals.Ids.file_id = row[0]
-                    print(f'Found Data File "{obj[0]}" with the ID "{Globals.Ids.file_id}"')
-                    logging.info(f'Found Data File "{obj[0]}" with the ID "{Globals.Ids.file_id}"')
+        match kwargs["type"]:
+            case 'workspaces':
+                sql = f'SELECT w.id FROM workspaces w where w.name = "{kwargs["workspace"]}";'
+                cursor.execute(sql)
+                row = cursor.fetchone()
+                if row is None: raise ValueError(f'"{kwargs["workspace"]}" is an invalid workspace name.')
+                id = row[0]
+                print(f'Found Workspace "{kwargs["workspace"]}" with the ID "{id}"')
+                logging.info(f'Found Workspace "{kwargs["workspace"]}" with the ID "{id}"')
+            case 'models':
+                sql = f'SELECT m.id from models m  WHERE m.currentWorkspaceId = "{kwargs["workspace_id"]}" AND m.name = "{kwargs["model"]}";'
+                cursor.execute(sql)
+                row = cursor.fetchone()
+                if row is None: raise ValueError(f'"{kwargs["model"]}" is an invalid model name.')
+                id = row[0]
+                print(f'Found Model "{kwargs["model"]}" with the ID "{id}"')
+                logging.info(f'Found Model "{kwargs["model"]}" with the ID "{id}"')
+            case 'actions':
+                sql = f'SELECT a.id FROM actions a WHERE a.workspace_id="{kwargs["workspace_id"]}" AND a.model_id="{kwargs["model_id"]}" AND a.name="{kwargs["action"]}";'
+                cursor.execute(sql)
+                row = cursor.fetchone()
+                if row is None: raise ValueError(f'"{kwargs["action"]}" is an invalid action name.')
+                id = row[0]
+                print(f'Found Import Action "{kwargs["action"]}" with the ID "{id}"')
+                logging.info(f'Found Import Action "{kwargs["action"]}" with the ID "{id}"')
+            case 'files':
+                sql = f'SELECT f.id FROM files f WHERE f.workspace_id="{kwargs["workspace_id"]}" AND f.model_id="{kwargs["model_id"]}" AND f.name="{kwargs["file"]}";'
+                cursor.execute(sql)
+                row = cursor.fetchone()
+                if row is None: raise ValueError(f'"{kwargs["file"]}" is an invalid file name.')
+                id = row[0]
+                print(f'Found Data File "{kwargs["file"]}" with the ID "{id}"')
+                logging.info(f'Found Data File "{kwargs["file"]}" with the ID "{id}"')
+
+        # Close SQLite connection
+        connection.close()
+
+        # Return ID
+        return id
+
 
     except ValueError as ve:
         logging.error(ve)
