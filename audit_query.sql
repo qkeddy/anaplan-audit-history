@@ -13,7 +13,7 @@ SELECT
 	u.userName as USER_NAME , 
 	u.displayName as DISPLAY_NAME , 
 	e.tenantId as TENANT_ID , 
-	"Quin Eddy Employee Tenant" as TENANT_NAME , 
+	"{{tenant_name}}" as TENANT_NAME , 
 	e."additionalAttributes.workspaceId" as WORKSPACE_ID , 
 	w.name as WORKSPACE_NAME ,
 	CASE 

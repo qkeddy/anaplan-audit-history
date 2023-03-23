@@ -203,6 +203,10 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
         sql_file = open("./audit_query.sql", "r")
         # read whole file to a string
         sql = sql_file.read()
+
+        # Update sql with tenant name
+        sql = sql.replace('{{tenant_name}}', kwargs['tenant_name'])
+
         # close file
         sql_file.close()
 
