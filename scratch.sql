@@ -1,36 +1,38 @@
-SELECT *  FROM events e;  WHERE e."additionalAttributes.actionId" = 116000000000 ;
+SELECT *  FROM events e
 
 SELECT count(*) FROM events e ;
 
+SELECT * FROM act_codes ac ;
+
 SELECT * FROM users u;
 
-SELECT * FROM workspaces w --where w.id = "8a868cd9837162ef0183cd4d7ba842c0" ;
+SELECT * FROM workspaces w ;
 
-SELECT * FROM act_codes ac ;
+SELECT * FROM models m ;
+
+SELECT * from actions a ;
 
 SELECT * FROM cloudworks c ;
 
-SELECT * from models m  --where id = "295D98F37F1B4682BE7A29035CBFB924";
-
-SELECT * from actions a --WHERE id = 116000000000;
-
-SELECT printf("%.0f", e.id) as id, e.eventTypeId  , e.userId, u.userName, u.displayName, e.tenantId, e.objectId, e.message, e.success, e.errorNumber, e.ipAddress, e.userAgent, e.sessionId, e.hostName, e.serviceVersion, e.eventDate, e.eventTimeZone, e.createdDate, e.createdTimeZone, e.checksum, e.objectTypeId, e.objectTenantId, e."additionalAttributes.workspaceId", e."additionalAttributes.actionId", e."additionalAttributes.name", e."additionalAttributes.type", e."additionalAttributes.auth_id"  
-FROM events e 
-left JOIN users u ON e.userId = u.id; 
+SELECT * FROM files f ;
 
 SELECT 
-	printf("%.0f", e.eventDate / 1000) || printf("%06d", e.[index] ) as LOAD_ID ,
-	--e.id as AUDIT_ID , 
+	printf("%.0f", e.eventDate / 1000) || printf("%09d", e.[index] ) as LOAD_ID ,
+	e.id as AUDIT_ID , 
+	datetime(e.eventDate/1000 , 'unixepoch') as EVENT_DATE ,
+	e.eventTimeZone as EVENT_TIMEZONE , 
+	datetime(e.createdDate/1000 , 'unixepoch') as CREATED_DATE ,
+	e.createdTimeZone as CREATE_TIMEZONE , 
 	e.eventTypeId as EVENT_ID , 
 	ac.[Event Message] as EVENT_MESSAGE , 
 	ac.[Associated Object Id] as ASSOCIATED_OBJECT_ID, 
-	--ac.Notes as NOTES , 
+	ac.Notes as NOTES , 
 	e.userId as USER_ID , 
 	u.userName as USER_NAME , 
-	--u.displayName as DISPLAY_NAME , 
-	--e.tenantId as TENANT_ID , 
-	--"Quin Eddy Employee Tenant" as TENANT_NAME , 
-	--e."additionalAttributes.workspaceId" as WORKSPACE_ID , 
+	u.displayName as DISPLAY_NAME , 
+	e.tenantId as TENANT_ID , 
+	"{{tenant_name}}" as TENANT_NAME , 
+	e."additionalAttributes.workspaceId" as WORKSPACE_ID , 
 	w.name as WORKSPACE_NAME ,
 	CASE 
 		WHEN e."additionalAttributes.modelId" IS NOT NULL THEN e."additionalAttributes.modelId"
@@ -54,15 +56,11 @@ SELECT
 	e.message as MESSAGE , 
 	e.success as SUCCESS, 
 	e.errorNumber as ERROR_NUMBER , 
-	--e.ipAddress as IP_ADDRESS , 
-	--e.userAgent as USER_AGENT , 
-	--e.sessionId as SESSION_ID , 
-	--e.hostName as HOST_NAME , 
-	--e.serviceVersion as SERVICE_VERSION , 
-	datetime(e.eventDate/1000 , 'unixepoch') as EVENT_DATE ,
-	e.eventTimeZone as EVENT_TIMEZONE , 
-	datetime(e.createdDate/1000 , 'unixepoch') as CREATED_DATE ,
-	e.createdTimeZone as CREATE_TIMEZONE , 
+	e.ipAddress as IP_ADDRESS , 
+	e.userAgent as USER_AGENT , 
+	e.sessionId as SESSION_ID , 
+	e.hostName as HOST_NAME , 
+	e.serviceVersion as SERVICE_VERSION , 
 	e.objectTypeId as OBJECT_TYPE_ID , 
 	e.objectTenantId as OBJECT_TENANT_ID , 
 	e."additionalAttributes.actionId" AS ACTION_ID ,
@@ -80,7 +78,7 @@ SELECT
 	e."additionalAttributes.roleId" as ADDITIONAL_ATTRIBUTES_ROLE_ID , 
 	e."additionalAttributes.roleName" as ADDITIONAL_ATTRIBUTES_ROLE_NAME ,
 	e."additionalAttributes.objectTenantId" as ADDITIONAL_ATTRIBUTES_OBJECT_TENANT_ID ,
-	e."additionalAttributes.objectId" as ADDITOINAL_ATTRIBUTES_OBJECT_ID ,
+	e."additionalAttributes.objectId" as ADDITIONAL_ATTRIBUTES_OBJECT_ID ,
 	e."additionalAttributes.active" as ADDITIONAL_ATTRIBUTES_ACTIVE ,
 	e.checksum as CHECKSUM
 FROM events e 
@@ -91,20 +89,6 @@ LEFT JOIN models m ON e."additionalAttributes.modelId" = m.id
 LEFT JOIN models m2 ON e.objectId = m2.id
 LEFT JOIN cloudworks cw on e.objectId = cw.integrationId 
 LEFT JOIN act_codes ac on e.eventTypeId = ac.[Event Code]
-LEFT JOIN actions a on e."additionalAttributes.actionId" || e.objectId  = a.id || a.model_id
-WHERE OBJECT_name = "stauffjc+qeddytenant@gmail.com" ;
+LEFT JOIN actions a on e."additionalAttributes.actionId" || e.objectId  = a.id || a.model_id 
+LIMIT 15000 OFFSET 0;
 
-
-
-
-SELECT LOAD_ID, COUNT(*) c FROM events GROUP BY DataId HAVING c > 1;
-
-SELECT * from events e ;
-
-
-
-pragma table_info (events);
-
-select DISTINCT eventTypeId from events e ;
-
-DROP table actions ;
