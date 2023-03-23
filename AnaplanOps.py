@@ -193,7 +193,7 @@ def drop_table(database_file, table):
 
 
 # === Query and Load data to Anaplan  ===
-def upload_records_to_anaplan(database_file, token_type, write_sample_file, chunk_size=15000, ** kwargs):
+def upload_records_to_anaplan(database_file, token_type, write_sample_files, chunk_size=15000, ** kwargs):
 
     # set the SQL query
     if kwargs["select_all_query"]:
@@ -221,7 +221,7 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_file, chun
         chunk_count = math.ceil(record_count / chunk_size)
 
         # Set the file chunk count
-        if not write_sample_file:
+        if not write_sample_files:
             body = {'chunkCount': chunk_count}
             uri = f'https://api.anaplan.com/2/0/workspaces/{kwargs["workspace_id"]}/models/{kwargs["model_id"]}/files/{kwargs["file_id"]}'
             res = requests.post(uri, json=body, headers={
@@ -248,7 +248,7 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_file, chun
                 df.index.name = f'{kwargs["acronym"]}_CT'
 
             # If samples files is toggled on, then limit to two records
-            if write_sample_file:
+            if write_sample_files:
                 df = df.head(2000)
 
             # Convert data frame to CSV with no index and if first chunk include the headers 
@@ -256,13 +256,13 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_file, chun
             if count == 0:
                 df.columns = [desc[0] for desc in cursor.description]
                 if kwargs["add_unique_id"]:
-                    if write_sample_file:
+                    if write_sample_files:
                         csv_record_set = df.to_csv(f'./samples/{kwargs["file_name"]}', index=True)
                         break
                     else:
                         csv_record_set = df.to_csv(index=True)
                 else:
-                    if write_sample_file:
+                    if write_sample_files:
                         csv_record_set = df.to_csv(f'./samples/{kwargs["file_name"]}', index=False)
                         break
                     else:
@@ -324,8 +324,7 @@ def fetch_ids(database_file, **kwargs):
                 sql = f'SELECT w.id FROM workspaces w where w.name = "{kwargs["workspace"]}";'
                 cursor.execute(sql)
                 row = cursor.fetchone()
-                if row is None:
-                    raise ValueError(f'"{kwargs["workspace"]}" is an invalid file name and not found in Anaplan.')
+                if row is None: raise ValueError(f'"{kwargs["workspace"]}" is an invalid file name and not found in Anaplan.')
                 id = row[0]
                 print(f'Found Workspace "{kwargs["workspace"]}" with the ID "{id}"')
                 logging.info(f'Found Workspace "{kwargs["workspace"]}" with the ID "{id}"')
@@ -333,8 +332,7 @@ def fetch_ids(database_file, **kwargs):
                 sql = f'SELECT m.id from models m  WHERE m.currentWorkspaceId = "{kwargs["workspace_id"]}" AND m.name = "{kwargs["model"]}";'
                 cursor.execute(sql)
                 row = cursor.fetchone()
-                if row is None:
-                    raise ValueError(f'"{kwargs["model"]}" is an invalid file name and not found in Anaplan.')
+                if row is None: raise ValueError(f'"{kwargs["model"]}" is an invalid file name and not found in Anaplan.')
                 id = row[0]
                 print(f'Found Model "{kwargs["model"]}" with the ID "{id}"')
                 logging.info(f'Found Model "{kwargs["model"]}" with the ID "{id}"')
@@ -342,8 +340,7 @@ def fetch_ids(database_file, **kwargs):
                 sql = f'SELECT a.id FROM actions a WHERE a.workspace_id="{kwargs["workspace_id"]}" AND a.model_id="{kwargs["model_id"]}" AND a.name="{kwargs["action"]}";'
                 cursor.execute(sql)
                 row = cursor.fetchone()
-                if row is None:
-                    raise ValueError(f'"{kwargs["action"]}" is an invalid file name and not found in Anaplan.')
+                if row is None: raise ValueError(f'"{kwargs["action"]}" is an invalid file name and not found in Anaplan.')
                 id = row[0]
                 print(f'Found Import Action "{kwargs["action"]}" with the ID "{id}"')
                 logging.info(f'Found Import Action "{kwargs["action"]}" with the ID "{id}"')

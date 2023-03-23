@@ -121,18 +121,23 @@ def main():
 			print("One or more files not found in Anaplan. Creating a sample set of files for upload into Anaplan.")
 			write_sample_files = True
 		else:
+			if settings["writeSampleFilesOverride"]:
+				write_sample_files = True
 			key['id'] = id
 
 		AnaplanOps.upload_records_to_anaplan(
-			database_file=database_file, token_type="Bearer ", write_sample_file=write_sample_files, workspace_id=workspace_id, model_id=model_id, file_id=id, file_name=key['importFile'], table=key['table'], select_all_query=key['selectAllQuery'], add_unique_id=key['addUniqueId'], acronym=key['acronym'])
+			database_file=database_file, token_type="Bearer ", write_sample_files=write_sample_files, workspace_id=workspace_id, model_id=model_id, file_id=id, file_name=key['importFile'], table=key['table'], select_all_query=key['selectAllQuery'], add_unique_id=key['addUniqueId'], acronym=key['acronym'])
 
 
 
 	# TODO add error handling for missing kwargs error
-
 	# TODO Test w/ no network connection
-
 	# TODO Improve requests error handling
+	# TODO add execution of a Process
+	# TODO add parameter for tenant name
+	# TODO add option to force the creation of sample files
+
+
 
 
 	# Exit with return code 0

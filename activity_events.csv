@@ -54,7 +54,7 @@ USR-51,List items updated from an import,The associated model ID.,--
 USR-52,Module data updated from an import,The associated model ID.,--
 USR-53,Versions items updated from an import,The associated model ID.,--
 USR-54,Model updated from an import,The associated model ID.,--
-USR-55,Password Changed - NEEDS TO BE CONFIRMED XXXXX.,--
+USR-55,Password Changed,NEEDS TO BE CONFIRMED,--
 USR-57,User granted Exception access.,The associated user ID.,--
 USR-58,Revocation of Exception access.,The associated user ID.,--
 PIQ-01,Data Collection created,The associated integration ID.,--

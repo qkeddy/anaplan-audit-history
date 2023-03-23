@@ -1,5 +1,5 @@
 SELECT 
-	printf("%.0f", e.eventDate / 1000) || printf("%06d", e.[index] ) as LOAD_ID ,
+	printf("%.0f", e.eventDate / 1000) || printf("%09d", e.[index] ) as LOAD_ID ,
 	e.id as AUDIT_ID , 
 	datetime(e.eventDate/1000 , 'unixepoch') as EVENT_DATE ,
 	e.eventTimeZone as EVENT_TIMEZONE , 
