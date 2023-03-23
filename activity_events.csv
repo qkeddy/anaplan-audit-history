@@ -1,125 +1,125 @@
-Event Codes,Event Code,Event Message,Associated Object ID,Notes
-CONN-1,CONN-1,Connection configuration created successfully,The associated connection ID,--
-CONN-2,CONN-2,Connection configuration updated successfully,The associated connection ID,--
-CONN-3,CONN-3,Connection configuration deleted successfully,The associated connection ID,--
-CONN-4,CONN-4,Workspace associated with connection configuration successfully,The associated connection ID,Workspace is associated with a connection configuration.
-CONN-5,CONN-5,Workspace to connection configuration deleted successfully,The associated connection ID,Workspace to connection configuration association was deleted.
-CONN-6,CONN-6,Connection migrated successfully,The associated connection ID,--
-CONN-7,CONN-7,Connection migration rolled back successfully,The associated connection ID,--
-AUTHZ-0,AUTHZ-0,Authorization failure,N/A,There was an unauthorized attempt to access the workspace. Unauthorized entry attempt events are only logged when an unauthorized status is triggered without an authorization granted status.
-AUTHZ-1,AUTHZ-1,Access granted,,--
-AUTHZ-2,AUTHZ-2,Access Denied,,--
-AUTHZ-3,AUTHZ-3,Role Assigned,,--
-AUTHZ-4,AUTHZ-4,Role Assignment Denied,The User ID on which the role assignment was performed.,--
-AUTHZ-6,AUTHZ-6,Role Unassigned,The User ID on which the role assignment was performed.,--
-AUTHZ-7,AUTHZ-7,Role Unassigned Denied,The User ID on which the role assignment was performed.,--
-USR-1,USR-1,User created,The ID of the created user.,(In Anaplan)
-USR-2,USR-2,User activated,The ID of the created user.,(In Anaplan)
-USR-3,USR-3,User enabled,The associated user ID.,(In the tenant)
-USR-4,USR-4,User disabled,The associated user ID.,(In the tenant)
-USR-5,USR-5,User updated,The ID of the updated user.,--
-USR-8,USR-8,User login success,The ID associated with the user login.,--
-USR-9,USR-9,User login failure,The ID associated with the user login.,--
-USR-10,USR-10,User logout success,The ID associated with the user logout.,--
-USR-11,USR-11,User logout failure,The ID associated with the user logout.,--
-USR-12,USR-12,User session timeout,The ID associated with the user who timed out.,--
-USR-13,USR-13,"User access to model, success",The associated model ID.,"This message applies when a user successfully: Opens a model in the Manage Models interface; Opens a bookmarked model through a web browser; Selects a model name in Anaplan Home or in the Administration console; Navigates to the source model in the User Experience."
-USR-14,USR-14,User access-to-model failure,The associated model ID.,"This message applies when a user fails to: Opens a model in the Manage Models interface; Opens a bookmarked model through a web browser; Selects a model name in Anaplan Home or in the Administration console; Navigates to the source model in the User Experience."
-USR-15,USR-15,User assigned to tenant success,The associated user ID.,--
-USR-16,USR-16,User assigned to tenant failure,The associated user ID.,--
-USR-17,USR-17,User removed from tenant success,The associated user ID.,--
-USR-18,USR-18,User removed from tenant failure,The associated user ID.,--
-USR-19,USR-19,User accessed dashboard,The associated model ID.,--
-USR-20,USR-20,User executed action,The associated model ID.,--
-USR-21,USR-21,User added to workspace,The ID of the added user.,--
-USR-22,USR-22,User removed from workspace,The ID of the removed user.,--
-USR-23,USR-23,User assigned to a model role,The ID of the user assigned the model role.,"This includes the No Access role. If someone assigns or removes No Access, it is recorded in the audit log."
-USR-24,USR-24,User unassigned from a model role,The ID of the user unassigned from a role.,"This includes the No Access role. If someone assigns or removes No Access, it is recorded in the audit log."
-USR-25,USR-25,User assigned or unassigned the Workspace Admin role,The ID associated with the user whose role has changed.,"If someone assigns or removes the Workspace Administrator role, it is recorded in the audit log.."
-USR-26,USR-26,User email updated,The associated user ID.,--
-USR-27,USR-27,User first name updated,The associated user ID.,--
-USR-28,USR-28,User last name updated,The associated user ID.,--
-USR-29,USR-29,User Deleted,The associated user ID.,--
-USR-30,USR-30,Visitor added to workspace,The ID of the added visiting user.,--
-USR-31,USR-31,Visitor removed from workspace,The ID of the removed visiting user.,--
-USR-32,USR-32,Ad Hoc Data Export,The associated model ID.,--
-USR-33,USR-33,Assign,The associated model ID.,An object associated to a corresponding list.
-USR-34,USR-34,Copy branch,The associated model ID.,--
-USR-35,USR-35,Create,The associated model ID.,A create action was made.
-USR-36,USR-36,Data export from action,The associated model ID.,(Within Anaplan)
-USR-39,USR-39,Model imported via Manage models,The associated model ID.,--
-USR-42,USR-42,Line Items updated from an import,The associated model ID.,--
-USR-50,USR-50,Users updated from an import,The associated model ID.,--
-USR-51,USR-51,List items updated from an import,The associated model ID.,--
-USR-52,USR-52,Module data updated from an import,The associated model ID.,--
-USR-53,USR-53,Versions items updated from an import,The associated model ID.,--
-USR-54,USR-54,Model updated from an import,The associated model ID.,--
-USR-55,USR-55,Password Changed - NEEDS TO BE CONFIRMED XXXXX.,--
-USR-57,USR-57,User granted Exception access.,The associated user ID.,--
-USR-58,USR-58,Revocation of Exception access.,The associated user ID.,--
-PIQ-01,PIQ-01,Data Collection created,The associated integration ID.,--
-PIQ-02,PIQ-02,Changed Data Collection name,The associated integration ID.,--
-PIQ-03,PIQ-03,Data Collection deleted,The associated integration ID.,--
-PIQ-04,PIQ-04,Rerun Data Collection assembly,The associated integration ID.,--
-PIQ-05,PIQ-05,Forecast model created,The associated integration ID.,--
-PIQ-06,PIQ-06,Changed Forecast model name,The associated integration ID.,--
-PIQ-07,PIQ-07,Forecast model deleted,The associated integration ID.,--
-PIQ-08,PIQ-08,Forecast action created,The associated integration ID.,--
-PIQ-09,PIQ-09,Forecast action edited,The associated integration ID.,--
-PIQ-10,PIQ-10,Changed Forecast action name,The associated integration ID.,--
-PIQ-11,PIQ-11,Forecast action deleted,The associated integration ID.,--
-PIQ-12,PIQ-12,Forecast action added or changed schedule,The associated integration ID.,--
-PIQ-13,PIQ-13,Forecast action schedule paused,The associated integration ID.,--
-PIQ-14,PIQ-14,Forecast action executed,The associated integration ID.,--
-PIQ-15,PIQ-15,"Backtest imported, forecast model",The associated integration ID.,--
-INT-01,INT-01,Connection creation,The associated connection ID,--
-INT-02,INT-02,Connection deletion,The associated connection ID,--
-INT-03,INT-03,Connection update,The associated connection ID,--
-INT-04,INT-04,Data Integration update,The associated integration ID,--
-INT-05,INT-05,Data Integration creation,The associated integration ID,--
-INT-06,INT-06,Data Integration execution,The associated integration ID,--
-INT-07,INT-07,Data Integration deletion,The associated integration ID,--
-DSM-071,DSM-071,Create key pair with key,The user ID associated with the action to create the key pair with key.,--
-DSM-229,DSM-229,Add a guardpoint with a policy,The user ID associated with the action to add a guardpoint.,--
-DSM-231,DSM-231,Add a group guardpoint,The user ID associated with the action to add a group guardpoint.,--
-DSM-235,DSM-235,Update a guardpoint,The user ID associated with the action to update guardpoint,--
-DSM-238,DSM-238,Delete a group guardpoint,The user ID associated with the action to delete a group guardpoint.,--
-DSM-240,DSM-240,Delete symmetric key,The user ID associated with the action to create the key pair with key.,--
-DSM-281,DSM-281,Delete an online policy,The user ID associated with the action to delete online policy,--
-DSM-501,DSM-501,Marked guardpoint pending delete with a policy,The user ID associated with the action to mark the guardpoint pending delete with a policy,--
-DSM-502,DSM-502,Delete a pending guardpoint with a policy,The user ID associated with the action to delete pending guardpoint with policy.,--
-DSM-DAO0071I,DSM-DAO0071I,Create key pair with key,The user ID associated with the action to create the key pair with key.,--
-DSM-DAO0229I,DSM-DAO0229I,Add a guardpoint with a policy,The user ID associated with the action to add a guardpoint.,--
-DSM-DAO0231I,DSM-DAO0231I,Add a group guardpoint,The user ID associated with the action to add a group guardpoint.,--
-DSM-DAO0235I,DSM-DAO0235I,Update a guardpoint,The user ID associated with the action to update guardpoint,--
-DSM-DAO0238I,DSM-DAO0238I,Delete a group guardpoint,The user ID associated with the action to delete a group guardpoint.,--
-DSM-DAO0240I,DSM-DAO0240I,Delete symmetric key,The user ID associated with the action to create the key pair with key.,--
-DSM-DAO0281I,DSM-DAO0281I,Delete an online policy,The user ID associated with the action to delete online policy,--
-DSM-DAO0501I,DSM-DAO0501I,Marked guardpoint pending delete with a policy,The user ID associated with the action to mark the guardpoint pending delete with a policy,--
-DSM-DAO0502I,DSM-DAO0502I,Delete a pending guardpoint with a policy,The user ID associated with the action to delete pending guardpoint with policy.,--
-DSM-072,DSM-072,Delete key pair with key,The user ID associated with the action to create the key pair with key.,--
-DSM-239,DSM-239,Create symmetric key with key,The user ID associated with the action to create the key pair with key.,The same key is used for both encryption and decryption.
-DSM-267,DSM-267,A user logged in,The user ID associated with the action to create the key pair with key.,--
-DSM-405,DSM-405,Assigned roles to a user in the domain,The user ID associated with the action to create the key pair with key.,--
-DSM-406,DSM-406,Remove user from domain,The user ID associated with the action to create the key pair with key.,--
-DSM-425,DSM-425,Enable user in a domain,The user ID associated with the action to create the key pair with key.,--
-DSM-426,DSM-426,Switch the domain,The user ID associated with the action to create the key pair with key.,--
-DSM-576,DSM-576,Update Key,The user ID associated with the action to create the key pair with key.,--
-DSM-674,DSM-674,Create key attribute,The user ID associated with the action to create the key pair with key.,--
-DSM-DAO0072I,DSM-DAO0072I,Delete key pair with key,The user ID associated with the action to create the key pair with key.,--
-DSM-DAO0239I,DSM-DAO0239I,Create symmetric key with key,The user ID associated with the action to create the key pair with key.,The same key is used for both encryption and decryption.
-DSM-DAO0267I,DSM-DAO0267I,A user logged in,The user ID associated with the action to create the key pair with key.,--
-DSM-DAO0405I,DSM-DAO0405I,Assigned roles to a user in the domain,The user ID associated with the action to create the key pair with key.,--
-DSM-DAO0406I,DSM-DAO0406I,Remove user from domain,The user ID associated with the action to create the key pair with key.,--
-DSM-DAO0425I,DSM-DAO0425I,Enable user in a domain,The user ID associated with the action to create the key pair with key.,--
-DSM-DAO0426I,DSM-DAO0426I,Switch the domain,The user ID associated with the action to create the key pair with key.,--
-DSM-DAO576I,DSM-DAO576I,Update Key,The user ID associated with the action to create the key pair with key.,--
-DSM-DAO0674I,DSM-DAO0674I,Create key attribute,The user ID associated with the action to create the key pair with key.,--
-DSM-046,DSM-046,Delete host,The user ID associated with the action to delete a host.,--
-DSM-048,DSM-048,Update host,The user ID associated with the action to update a host.,--
-DSM-521,DSM-521,Add a host group,The user ID associated with the action to add a host group.,--
-DSM-531,DSM-531,Delete a host group,The user ID associated with the action to delete a host group.,--
-DSM-DAO0046I,DSM-DAO0046I,Delete host,The user ID associated with the action to delete a host.,--
-DSM-DAO0048I,DSM-DAO0048I,Update host,The user ID associated with the action to update a host.,--
-DSM-DAO0521I,DSM-DAO0521I,Add a host group,The user ID associated with the action to add a host group.,--
-DSM-DAO0531I,DSM-DAO0531I,Delete a host group,The user ID associated with the action to delete a host group.,--
+Event Code,Event Message,Associated Object ID,Notes
+CONN-1,Connection configuration created successfully,The associated connection ID,--
+CONN-2,Connection configuration updated successfully,The associated connection ID,--
+CONN-3,Connection configuration deleted successfully,The associated connection ID,--
+CONN-4,Workspace associated with connection configuration successfully,The associated connection ID,Workspace is associated with a connection configuration.
+CONN-5,Workspace to connection configuration deleted successfully,The associated connection ID,Workspace to connection configuration association was deleted.
+CONN-6,Connection migrated successfully,The associated connection ID,--
+CONN-7,Connection migration rolled back successfully,The associated connection ID,--
+AUTHZ-0,Authorization failure,N/A,There was an unauthorized attempt to access the workspace. Unauthorized entry attempt events are only logged when an unauthorized status is triggered without an authorization granted status.
+AUTHZ-1,Access granted,,--
+AUTHZ-2,Access Denied,,--
+AUTHZ-3,Role Assigned,,--
+AUTHZ-4,Role Assignment Denied,The User ID on which the role assignment was performed.,--
+AUTHZ-6,Role Unassigned,The User ID on which the role assignment was performed.,--
+AUTHZ-7,Role Unassigned Denied,The User ID on which the role assignment was performed.,--
+USR-1,User created,The ID of the created user.,(In Anaplan)
+USR-2,User activated,The ID of the created user.,(In Anaplan)
+USR-3,User enabled,The associated user ID.,(In the tenant)
+USR-4,User disabled,The associated user ID.,(In the tenant)
+USR-5,User updated,The ID of the updated user.,--
+USR-8,User login success,The ID associated with the user login.,--
+USR-9,User login failure,The ID associated with the user login.,--
+USR-10,User logout success,The ID associated with the user logout.,--
+USR-11,User logout failure,The ID associated with the user logout.,--
+USR-12,User session timeout,The ID associated with the user who timed out.,--
+USR-13,"User access to model, success",The associated model ID.,"This message applies when a user successfully: Opens a model in the Manage Models interface; Opens a bookmarked model through a web browser; Selects a model name in Anaplan Home or in the Administration console; Navigates to the source model in the User Experience."
+USR-14,User access-to-model failure,The associated model ID.,"This message applies when a user fails to: Opens a model in the Manage Models interface; Opens a bookmarked model through a web browser; Selects a model name in Anaplan Home or in the Administration console; Navigates to the source model in the User Experience."
+USR-15,User assigned to tenant success,The associated user ID.,--
+USR-16,User assigned to tenant failure,The associated user ID.,--
+USR-17,User removed from tenant success,The associated user ID.,--
+USR-18,User removed from tenant failure,The associated user ID.,--
+USR-19,User accessed dashboard,The associated model ID.,--
+USR-20,User executed action,The associated model ID.,--
+USR-21,User added to workspace,The ID of the added user.,--
+USR-22,User removed from workspace,The ID of the removed user.,--
+USR-23,User assigned to a model role,The ID of the user assigned the model role.,"This includes the No Access role. If someone assigns or removes No Access, it is recorded in the audit log."
+USR-24,User unassigned from a model role,The ID of the user unassigned from a role.,"This includes the No Access role. If someone assigns or removes No Access, it is recorded in the audit log."
+USR-25,User assigned or unassigned the Workspace Admin role,The ID associated with the user whose role has changed.,"If someone assigns or removes the Workspace Administrator role, it is recorded in the audit log.."
+USR-26,User email updated,The associated user ID.,--
+USR-27,User first name updated,The associated user ID.,--
+USR-28,User last name updated,The associated user ID.,--
+USR-29,User Deleted,The associated user ID.,--
+USR-30,Visitor added to workspace,The ID of the added visiting user.,--
+USR-31,Visitor removed from workspace,The ID of the removed visiting user.,--
+USR-32,Ad Hoc Data Export,The associated model ID.,--
+USR-33,Assign,The associated model ID.,An object associated to a corresponding list.
+USR-34,Copy branch,The associated model ID.,--
+USR-35,Create,The associated model ID.,A create action was made.
+USR-36,Data export from action,The associated model ID.,(Within Anaplan)
+USR-39,Model imported via Manage models,The associated model ID.,--
+USR-42,Line Items updated from an import,The associated model ID.,--
+USR-50,Users updated from an import,The associated model ID.,--
+USR-51,List items updated from an import,The associated model ID.,--
+USR-52,Module data updated from an import,The associated model ID.,--
+USR-53,Versions items updated from an import,The associated model ID.,--
+USR-54,Model updated from an import,The associated model ID.,--
+USR-55,Password Changed - NEEDS TO BE CONFIRMED XXXXX.,--
+USR-57,User granted Exception access.,The associated user ID.,--
+USR-58,Revocation of Exception access.,The associated user ID.,--
+PIQ-01,Data Collection created,The associated integration ID.,--
+PIQ-02,Changed Data Collection name,The associated integration ID.,--
+PIQ-03,Data Collection deleted,The associated integration ID.,--
+PIQ-04,Rerun Data Collection assembly,The associated integration ID.,--
+PIQ-05,Forecast model created,The associated integration ID.,--
+PIQ-06,Changed Forecast model name,The associated integration ID.,--
+PIQ-07,Forecast model deleted,The associated integration ID.,--
+PIQ-08,Forecast action created,The associated integration ID.,--
+PIQ-09,Forecast action edited,The associated integration ID.,--
+PIQ-10,Changed Forecast action name,The associated integration ID.,--
+PIQ-11,Forecast action deleted,The associated integration ID.,--
+PIQ-12,Forecast action added or changed schedule,The associated integration ID.,--
+PIQ-13,Forecast action schedule paused,The associated integration ID.,--
+PIQ-14,Forecast action executed,The associated integration ID.,--
+PIQ-15,"Backtest imported, forecast model",The associated integration ID.,--
+INT-01,Connection creation,The associated connection ID,--
+INT-02,Connection deletion,The associated connection ID,--
+INT-03,Connection update,The associated connection ID,--
+INT-04,Data Integration update,The associated integration ID,--
+INT-05,Data Integration creation,The associated integration ID,--
+INT-06,Data Integration execution,The associated integration ID,--
+INT-07,Data Integration deletion,The associated integration ID,--
+DSM-071,Create key pair with key,The user ID associated with the action to create the key pair with key.,--
+DSM-229,Add a guardpoint with a policy,The user ID associated with the action to add a guardpoint.,--
+DSM-231,Add a group guardpoint,The user ID associated with the action to add a group guardpoint.,--
+DSM-235,Update a guardpoint,The user ID associated with the action to update guardpoint,--
+DSM-238,Delete a group guardpoint,The user ID associated with the action to delete a group guardpoint.,--
+DSM-240,Delete symmetric key,The user ID associated with the action to create the key pair with key.,--
+DSM-281,Delete an online policy,The user ID associated with the action to delete online policy,--
+DSM-501,Marked guardpoint pending delete with a policy,The user ID associated with the action to mark the guardpoint pending delete with a policy,--
+DSM-502,Delete a pending guardpoint with a policy,The user ID associated with the action to delete pending guardpoint with policy.,--
+DSM-DAO0071I,Create key pair with key,The user ID associated with the action to create the key pair with key.,--
+DSM-DAO0229I,Add a guardpoint with a policy,The user ID associated with the action to add a guardpoint.,--
+DSM-DAO0231I,Add a group guardpoint,The user ID associated with the action to add a group guardpoint.,--
+DSM-DAO0235I,Update a guardpoint,The user ID associated with the action to update guardpoint,--
+DSM-DAO0238I,Delete a group guardpoint,The user ID associated with the action to delete a group guardpoint.,--
+DSM-DAO0240I,Delete symmetric key,The user ID associated with the action to create the key pair with key.,--
+DSM-DAO0281I,Delete an online policy,The user ID associated with the action to delete online policy,--
+DSM-DAO0501I,Marked guardpoint pending delete with a policy,The user ID associated with the action to mark the guardpoint pending delete with a policy,--
+DSM-DAO0502I,Delete a pending guardpoint with a policy,The user ID associated with the action to delete pending guardpoint with policy.,--
+DSM-072,Delete key pair with key,The user ID associated with the action to create the key pair with key.,--
+DSM-239,Create symmetric key with key,The user ID associated with the action to create the key pair with key.,The same key is used for both encryption and decryption.
+DSM-267,A user logged in,The user ID associated with the action to create the key pair with key.,--
+DSM-405,Assigned roles to a user in the domain,The user ID associated with the action to create the key pair with key.,--
+DSM-406,Remove user from domain,The user ID associated with the action to create the key pair with key.,--
+DSM-425,Enable user in a domain,The user ID associated with the action to create the key pair with key.,--
+DSM-426,Switch the domain,The user ID associated with the action to create the key pair with key.,--
+DSM-576,Update Key,The user ID associated with the action to create the key pair with key.,--
+DSM-674,Create key attribute,The user ID associated with the action to create the key pair with key.,--
+DSM-DAO0072I,Delete key pair with key,The user ID associated with the action to create the key pair with key.,--
+DSM-DAO0239I,Create symmetric key with key,The user ID associated with the action to create the key pair with key.,The same key is used for both encryption and decryption.
+DSM-DAO0267I,A user logged in,The user ID associated with the action to create the key pair with key.,--
+DSM-DAO0405I,Assigned roles to a user in the domain,The user ID associated with the action to create the key pair with key.,--
+DSM-DAO0406I,Remove user from domain,The user ID associated with the action to create the key pair with key.,--
+DSM-DAO0425I,Enable user in a domain,The user ID associated with the action to create the key pair with key.,--
+DSM-DAO0426I,Switch the domain,The user ID associated with the action to create the key pair with key.,--
+DSM-DAO576I,Update Key,The user ID associated with the action to create the key pair with key.,--
+DSM-DAO0674I,Create key attribute,The user ID associated with the action to create the key pair with key.,--
+DSM-046,Delete host,The user ID associated with the action to delete a host.,--
+DSM-048,Update host,The user ID associated with the action to update a host.,--
+DSM-521,Add a host group,The user ID associated with the action to add a host group.,--
+DSM-531,Delete a host group,The user ID associated with the action to delete a host group.,--
+DSM-DAO0046I,Delete host,The user ID associated with the action to delete a host.,--
+DSM-DAO0048I,Update host,The user ID associated with the action to update a host.,--
+DSM-DAO0521I,Add a host group,The user ID associated with the action to add a host group.,--
+DSM-DAO0531I,Delete a host group,The user ID associated with the action to delete a host group.,--

@@ -23,52 +23,68 @@
         "model": "Audit Report",
         "targetModelObjects": {
             "activityCodesData": {
-                "importFile": "ACTIVITY_CODES.csv",
-                "importAction": "IMPORT_ACTIVITY_CODES",
+                "importFile": "ACTIVITY_CODES_test.csv",
+                "acronym": "AC",
                 "table": "act_codes",
-                "mode": "replace"
+                "selectAllQuery": true,
+                "mode": "replace",
+                "addUniqueId": false
             },
             "usersData": {
-                "importFile": "USER_LIST.csv",
-                "importAction": "IMPORT_USER_LIST",
+                "importFile": "USER_LIST_test.csv",
+                "acronym": "USR",
                 "table": "users",
-                "mode": "replace"
+                "selectAllQuery": true,
+                "mode": "replace",
+                "addUniqueId": true
             },
             "workspacesData": {
-                "importFile": "WORKSPACE_LIST.csv",
-                "importAction": "IMPORT_WORKSPACE_LIST",
+                "importFile": "WORKSPACE_LIST_test.csv",
                 "table": "workspaces",
-                "mode": "replace"
+                "acronym": "WS",
+                "selectAllQuery": true,
+                "mode": "replace",
+                "addUniqueId": true
             },
             "modelsData": {
-                "importFile": "MODEL_LIST.csv",
-                "importAction": "IMPORT_MODEL_LIST",
+                "importFile": "MODEL_LIST_test.csv",
+                "acronym": "MOD",
                 "table": "models",
-                "mode": "append"
+                "selectAllQuery": true,
+                "mode": "append",
+                "addUniqueId": true
             },
             "actionsData": {
-                "importFile": "ACTION_LIST.csv",
-                "importAction": "IMPORT_ACTION_LIST",
+                "importFile": "ACTION_LIST_test.csv",
+                "acronym": "ACT",
                 "table": "actions",
-                "mode": "append"
+                "selectAllQuery": true,
+                "mode": "append",
+                "addUniqueId": true
             },
             "filesData": {
-                "importFile": "FILE_LIST.csv",
-                "importAction": "IMPORT_FILE_LIST",
+                "importFile": "FILE_LIST_test.csv",
+                "acronym": "FILE",
                 "table": "files",
-                "mode": "append"
+                "selectAllQuery": true,
+                "mode": "append",
+                "addUniqueId": true
             },
             "cloudWorksData": {
-                "importFile": "CLOUDWORKS_LIST.csv",
-                "importAction": "IMPORT_CLOUDWORKS_LIST",
+                "importFile": "CLOUDWORKS_LIST_test.csv",
+                "acronym": "CW",
                 "table": "cloudworks",
-                "mode": "replace"
+                "selectAllQuery": true,
+                "mode": "replace",
+                "addUniqueId": true
             },
             "auditData": {
-                "importFile": "AUDIT_LOG.csv",
-                "importAction": "IMPORT_AUDIT_LOG",
+                "importFile": "AUDIT_LOG_test.csv",
+                "acronym": "AUDIT",
                 "table": "events",
-                "mode": "replace"
+                "selectAllQuery": false,
+                "mode": "replace",
+                "addUniqueId": false
             }
         }
     }

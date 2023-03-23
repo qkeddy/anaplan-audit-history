@@ -4,7 +4,6 @@
 
 import sys
 import logging
-import json
 
 import utils
 import AnaplanOauth
@@ -62,92 +61,79 @@ def main():
 
 	# Get Users
 	AnaplanOps.get_anaplan_paged_data(uri=uris['users'], token_type="Bearer ", database_file=database_file,
-                                   database_table=targetModelObjects['usersData']['table'], record_path="Resources", page_size_key=['itemsPerPage'], page_index_key=['startIndex'], total_results_key=['totalResults'])
+                                   database_table=targetModelObjects['usersData']['table'], add_unique_id=targetModelObjects['usersData']['addUniqueId'], record_path="Resources", page_size_key=['itemsPerPage'], page_index_key=['startIndex'], total_results_key=['totalResults'])
 
 	# Get Workspaces
 	workspace_ids = AnaplanOps.get_anaplan_paged_data(uri=uris['workspaces'], token_type="Bearer ", database_file=database_file,
-                                                   database_table=targetModelObjects['workspacesData']['table'], record_path="workspaces", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], return_id=True)
+                                                   database_table=targetModelObjects['workspacesData']['table'], add_unique_id=targetModelObjects['workspacesData']['addUniqueId'], record_path="workspaces", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], return_id=True)
 
 	# Get Models in all Workspace
 	for ws_id in workspace_ids:
 		model_ids = AnaplanOps.get_anaplan_paged_data(uri=uris['models'].replace('{{workspace_id}}', ws_id), token_type="Bearer ", database_file=database_file,
-                                                database_table=targetModelObjects['modelsData']['table'], record_path="models", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], return_id=True)
+                                                database_table=targetModelObjects['modelsData']['table'], add_unique_id=targetModelObjects['modelsData']['addUniqueId'], record_path="models", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], return_id=True)
 
 		# Loop through each Model to get details
 		for mod_id in model_ids:
 			# Get Import Actions in all Models in all Workspaces
 			AnaplanOps.get_anaplan_paged_data(uri=uris['imports'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-                                     database_table=targetModelObjects['actionsData']['table'], record_path="imports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+                                     database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="imports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 
 			# Get Export Actions in all Models in all Workspaces
 			AnaplanOps.get_anaplan_paged_data(uri=uris['exports'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-                                     database_table=targetModelObjects['actionsData']['table'], record_path="exports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+                                     database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="exports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 
 			# Get Actions in all Models in all Workspaces
 			AnaplanOps.get_anaplan_paged_data(uri=uris['actions'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-                                     database_table=targetModelObjects['actionsData']['table'], record_path="exports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+                                     database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="exports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 
 			# Get Processes in all Models in all Workspaces
 			AnaplanOps.get_anaplan_paged_data(uri=uris['processes'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-                                     database_table=targetModelObjects['actionsData']['table'], record_path="processes", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+                                     database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="processes", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 			
 			# Get Files in all Models in all Workspaces
 			AnaplanOps.get_anaplan_paged_data(uri=uris['files'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-                                     database_table=targetModelObjects['filesData']['table'], record_path="files", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+                                     database_table=targetModelObjects['filesData']['table'], add_unique_id=targetModelObjects['filesData']['addUniqueId'], record_path="files", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 
 	# Get CloudWorks Integrations
 	AnaplanOps.get_anaplan_paged_data(uri=uris['cloudWorks'], token_type="AnaplanAuthToken ", database_file=database_file,
-                                   database_table=targetModelObjects['cloudWorksData']['table'], record_path="integrations", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'])
+                                   database_table=targetModelObjects['cloudWorksData']['table'], add_unique_id=targetModelObjects['cloudWorksData']['addUniqueId'], record_path="integrations", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'])
 
-	# # Get Events
-	# AnaplanOps.get_anaplan_paged_data(uri=uris['auditEvents'], token_type="AnaplanAuthToken ", database_file=database_file,
-    #                                database_table=targetModelObjects['auditData']['table'], record_path="response", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offSet'], total_results_key=['meta', 'paging', 'totalSize'])
+	# Get Events
+	AnaplanOps.get_anaplan_paged_data(uri=uris['auditEvents'], token_type="AnaplanAuthToken ", database_file=database_file,
+                                   database_table=targetModelObjects['auditData']['table'], add_unique_id=targetModelObjects['auditData']['addUniqueId'], record_path="response", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offSet'], total_results_key=['meta', 'paging', 'totalSize'])
 
-
-	# TODO Create sample files
 
 	# Fetch ids for target Workspace and Model
 	workspace_id = AnaplanOps.fetch_ids(
-		database_file=database_file, workspace=settings['targetAnaplanModel']['workspace'], type='workspaces')
-
-	
+		database_file=database_file, workspace=settings['targetAnaplanModel']['workspace'], type='workspaces')	
 	model_id = AnaplanOps.fetch_ids(
 		database_file=database_file, model=settings['targetAnaplanModel']['model'], type='models', workspace_id=workspace_id)
 	
-	# TODO add IDs to the other objects
-	
-	# Fetch Import Action ids
-	for key in targetModelObjects.values():
-		id = AnaplanOps.fetch_ids(
-                    database_file=database_file, action=key['importAction'], type='actions', workspace_id=workspace_id, model_id=model_id)
-		
 	# Fetch Import Data Source ids
+	write_sample_files = False
 	for key in targetModelObjects.values():
 		id = AnaplanOps.fetch_ids(
 				database_file=database_file, file=key['importFile'], type='files', workspace_id=workspace_id, model_id=model_id)
 		
-		if id == '113000000021':
-		
-			AnaplanOps.upload_records_to_anaplan(
-				database_file=database_file, token_type="Bearer ", workspace_id=workspace_id, model_id=model_id, file_id=id)
+		# If a target file is not found in Anaplan, then toggle the creation of sample files
+		if id == -1:
+			logger.warning(print("One or more files not found in Anaplan. Creating a sample set of files for upload into Anaplan."))
+			print("One or more files not found in Anaplan. Creating a sample set of files for upload into Anaplan.")
+			write_sample_files = True
+		else:
+			key['id'] = id
 
-			
-		
-
-	# TODO search for files. If files are not there w/ out IDs, then stop the presses
-
-	
-	# 
-	# 1) Get Workspaces & Model IDs
-	# 2) Get File and Import Action Ids
-	# 3) If File Ids and Import Action Ids do not exist then notify the user
-	# 5) Else upload file
+		AnaplanOps.upload_records_to_anaplan(
+			database_file=database_file, token_type="Bearer ", write_sample_file=write_sample_files, workspace_id=workspace_id, model_id=model_id, file_id=id, file_name=key['importFile'], table=key['table'], select_all_query=key['selectAllQuery'], add_unique_id=key['addUniqueId'], acronym=key['acronym'])
 
 
 
+	# TODO add error handling for missing kwargs error
 
+	# TODO Test w/ no network connection
 
-	
+	# TODO Improve requests error handling
+
 
 	# Exit with return code 0
 	sys.exit(0)

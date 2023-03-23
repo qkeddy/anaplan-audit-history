@@ -60,7 +60,7 @@ SELECT
 	e."additionalAttributes.roleId" as ADDITIONAL_ATTRIBUTES_ROLE_ID , 
 	e."additionalAttributes.roleName" as ADDITIONAL_ATTRIBUTES_ROLE_NAME ,
 	e."additionalAttributes.objectTenantId" as ADDITIONAL_ATTRIBUTES_OBJECT_TENANT_ID ,
-	e."additionalAttributes.objectId" as ADDITOINAL_ATTRIBUTES_OBJECT_ID ,
+	e."additionalAttributes.objectId" as ADDITIONAL_ATTRIBUTES_OBJECT_ID ,
 	e."additionalAttributes.active" as ADDITIONAL_ATTRIBUTES_ACTIVE ,
 	e.checksum as CHECKSUM
 FROM events e 
