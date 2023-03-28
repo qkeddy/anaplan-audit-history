@@ -91,7 +91,7 @@ def main():
 
 			# Get Actions in all Models in all Workspaces
 			AnaplanOps.get_anaplan_paged_data(uri=uris['actions'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-                                     database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="exports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+                                     database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="actions", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 
 			# Get Processes in all Models in all Workspaces
 			AnaplanOps.get_anaplan_paged_data(uri=uris['processes'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
@@ -109,6 +109,7 @@ def main():
 	AnaplanOps.get_anaplan_paged_data(uri=uris['auditEvents'], token_type="AnaplanAuthToken ", database_file=database_file,
                                    database_table=targetModelObjects['auditData']['table'], add_unique_id=targetModelObjects['auditData']['addUniqueId'], record_path="response", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offSet'], total_results_key=['meta', 'paging', 'totalSize'])
 
+	# TODO change Events to support all and incremental
 
 	# Fetch ids for target Workspace and Model
 	workspace_id = AnaplanOps.fetch_ids(
@@ -116,7 +117,7 @@ def main():
 	model_id = AnaplanOps.fetch_ids(
 		database_file=database_file, model=settings['targetAnaplanModel']['model'], type='models', workspace_id=workspace_id)
 	
-	# Fetch Import Data Source ids
+	# Fetch Import Data Source ids and loop over each target type and upload data
 	write_sample_files = False
 	for key in targetModelObjects.values():
 		id = AnaplanOps.fetch_ids(
@@ -133,7 +134,7 @@ def main():
 				logger.info("Create Sample files is toggled on. Files will be created in the `/samples directory.")
 				print("Create Sample files is toggled on. Files will be created in the `/samples directory.")
 
-			key['id'] = id
+			# key['id'] = id
 
 		AnaplanOps.upload_records_to_anaplan(
 			database_file=database_file, token_type="Bearer ", write_sample_files=write_sample_files, workspace_id=workspace_id, model_id=model_id, file_id=id, file_name=key['importFile'], table=key['table'], select_all_query=key['selectAllQuery'], add_unique_id=key['addUniqueId'], acronym=key['acronym'], tenant_name=settings["anaplanTenantName"])

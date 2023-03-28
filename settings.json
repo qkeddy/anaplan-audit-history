@@ -3,6 +3,8 @@
     "writeSampleFilesOverride": false,
     "database": "audit.db3",
 
+    "lastRun":"insert time stamp in epic time",
+
     "get_device_id_uri": "https://us1a.app.anaplan.com/oauth/device/code",
     "get_tokens_uri": "https://us1a.app.anaplan.com/oauth/token",
 
