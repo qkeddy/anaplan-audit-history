@@ -44,6 +44,19 @@ def read_configuration_settings():
         # Exit with a non-zero exit code
         sys.exit(1)
 
+# === Update configuration file ===
+def update_configuration_settings(object, value, key):
+    try:
+        with open("settings.json", "w") as settings_file:
+            object[f'{key}'] = value
+            json.dump(object, settings_file, indent=4)
+        logging.info("Configuration updated successfully")
+
+    except:
+        print("Unable to open the `settings.json` file. Please ensure the file is in the path of this Python module")
+        # Exit with a non-zero exit code
+        sys.exit(1)
+
 
 # === Read CLI Arguments ===
 def read_cli_arguments():

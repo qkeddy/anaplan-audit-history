@@ -58,13 +58,12 @@ def main():
 
 	# Drop tables
 	for key in targetModelObjects.values():
-		if key['mode']=='append':
+		if key['tableDrop']:   
 			AnaplanOps.drop_table(database_file=database_file, table=key['table'])
-
+	
 	# Load User Activity Codes
 	AnaplanOps.get_usr_activity_codes(
-		database_file=database_file, table=targetModelObjects['activityCodesData']['table'],
-		mode=targetModelObjects['activityCodesData']['mode'])
+		database_file=database_file, table=targetModelObjects['activityCodesData']['table'])
 
 	# Get Users
 	AnaplanOps.get_anaplan_paged_data(uri=uris['users'], token_type="Bearer ", database_file=database_file,
@@ -105,11 +104,11 @@ def main():
 	AnaplanOps.get_anaplan_paged_data(uri=uris['cloudWorks'], token_type="AnaplanAuthToken ", database_file=database_file,
                                    database_table=targetModelObjects['cloudWorksData']['table'], add_unique_id=targetModelObjects['cloudWorksData']['addUniqueId'], record_path="integrations", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'])
 
+		
 	# Get Events
-	AnaplanOps.get_anaplan_paged_data(uri=uris['auditEvents'], token_type="AnaplanAuthToken ", database_file=database_file,
-                                   database_table=targetModelObjects['auditData']['table'], add_unique_id=targetModelObjects['auditData']['addUniqueId'], record_path="response", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offSet'], total_results_key=['meta', 'paging', 'totalSize'])
+	last_run = AnaplanOps.get_incremental_audit_events(uri=uris['auditEvents'], token_type="AnaplanAuthToken ", database_file=database_file,
+                                                    database_table=targetModelObjects['auditData']['table'], add_unique_id=targetModelObjects['auditData']['addUniqueId'], mode=targetModelObjects['auditData']['mode'], record_path="response", json_path=['meta', 'paging'], last_run=settings['lastRun'])
 
-	# TODO change Events to support all and incremental
 
 	# Fetch ids for target Workspace and Model
 	workspace_id = AnaplanOps.fetch_ids(
@@ -134,10 +133,11 @@ def main():
 				logger.info("Create Sample files is toggled on. Files will be created in the `/samples directory.")
 				print("Create Sample files is toggled on. Files will be created in the `/samples directory.")
 
-			# key['id'] = id
-
 		AnaplanOps.upload_records_to_anaplan(
-			database_file=database_file, token_type="Bearer ", write_sample_files=write_sample_files, workspace_id=workspace_id, model_id=model_id, file_id=id, file_name=key['importFile'], table=key['table'], select_all_query=key['selectAllQuery'], add_unique_id=key['addUniqueId'], acronym=key['acronym'], tenant_name=settings["anaplanTenantName"])
+			database_file=database_file, token_type="Bearer ", write_sample_files=write_sample_files, workspace_id=workspace_id, model_id=model_id, file_id=id, file_name=key['importFile'], table=key['table'], select_all_query=key['selectAllQuery'], add_unique_id=key['addUniqueId'], acronym=key['acronym'], tenant_name=settings['anaplanTenantName'], last_run=settings['lastRun'])
+	
+	# Update `setting.json` with lastRun Date
+	utils.update_configuration_settings(object=settings, value=last_run, key='lastRun')
 
 	# Exit with return code 0
 	sys.exit(0)

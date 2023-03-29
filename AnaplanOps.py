@@ -8,17 +8,16 @@ import pandas as pd
 import sqlite3
 import math
 import sys
-import inspect
 
 import Globals
 import StatusExceptions
 
 
 # ===  Load user activity codes from file  ===
-def get_usr_activity_codes(database_file, table, mode):
+def get_usr_activity_codes(database_file, table):
     try:
         df = pd.read_csv('activity_events.csv')
-        update_table(database_file=database_file, table="act_codes", df=df, mode='replace')
+        update_table(database_file=database_file, table=table, df=df, mode='replace')
     except Exception as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
         logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
@@ -140,7 +139,7 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, add_u
         StatusExceptions.process_status_exceptions(res, uri)
 
 
-def get_anaplan_paged_data2(uri, token_type, database_file, database_table, record_path, json_path, workspace_id=None, model_id=None):
+def get_incremental_audit_events(uri, token_type, database_file, database_table, mode, record_path, add_unique_id, json_path, last_run):
     get_headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -151,17 +150,31 @@ def get_anaplan_paged_data2(uri, token_type, database_file, database_table, reco
     try:
         # Initial endpoint query
         print(uri)
-        res = requests.get(uri, headers=get_headers).json()
+
+        # Create empty DataFrame with specific column names & types
+        # If additional fields are required, then this will need to be updated.
+        df_initialize = pd.DataFrame({'index': pd.Series(dtype='int'), 'id': pd.Series(dtype='int'), 'eventTypeId': pd.Series(dtype='str'), 'userId': pd.Series(dtype='str'), 'tenantId': pd.Series(dtype='str'), 'objectId': pd.Series(dtype='str'), 'message': pd.Series(dtype='str'), 'success': pd.Series(dtype='bool'), 'errorNumber': pd.Series(dtype='str'), 'ipAddress': pd.Series(dtype='str'), 'userAgent': pd.Series(dtype='str'), 'sessionId': pd.Series(dtype='str'), 'hostName': pd.Series(dtype='str'), 'serviceVersion': pd.Series(dtype='str'), 'eventDate': pd.Series(dtype='int'), 'eventTimeZone': pd.Series(dtype='str'), 'createdDate': pd.Series(dtype='int'), 'createdTimeZone': pd.Series(dtype='str'), 'checksum': pd.Series(dtype='str'), 'objectTypeId': pd.Series(dtype='str'), 'objectTenantId': pd.Series(dtype='str'), 'additionalAttributes.workspaceId': pd.Series(dtype='str'), 'additionalAttributes.actionId': pd.Series(dtype='str'), 'additionalAttributes.name': pd.Series(dtype='str'), 'additionalAttributes.type': pd.Series(dtype='str'), 'additionalAttributes.auth_id': pd.Series(dtype='str'), 'additionalAttributes.modelAccessLevel': pd.Series(dtype='str'), 'additionalAttributes.modelId': pd.Series(dtype='str'), 'additionalAttributes.modelRoleName': pd.Series(dtype='str'), 'additionalAttributes.modelRoleId': pd.Series(dtype='str'), 'additionalAttributes.active': pd.Series(dtype='str'), 'additionalAttributes.actionName': pd.Series(dtype='str'), 'additionalAttributes.nux_visible': pd.Series(dtype='str'), 'additionalAttributes.roleId': pd.Series(dtype='str'), 'additionalAttributes.roleName': pd.Series(dtype='str'), 'additionalAttributes.objectTypeId': pd.Series(dtype='str'), 'additionalAttributes.objectTenantId': pd.Series(dtype='str'), 'additionalAttributes.objectId': pd.Series(dtype='str')})
+
+        # Offset the last_run date by 1 millisecond
+        if last_run != 0:
+            last_run = last_run + 1
+
+        # Set request with `last_run` value
+        res = requests.post(uri, headers=get_headers, json={"from": last_run}).json()
         df = pd.json_normalize(res, record_path)
+
+        # # Append to the initialized Data Frame
+        df = pd.concat([df_initialize, df], ignore_index=True)
+
         total_size = res[json_path[0]][json_path[1]]['totalSize']
         while True:
             try:
                 # Find key in json path
-                next_uri = res[json_path[0]][json_path[1]][json_path[2]]
+                next_uri = res[json_path[0]][json_path[1]]['nextUrl']
 
                 # Get the next request
                 print(next_uri)
-                res = requests.get(next_uri, headers=get_headers).json()
+                res = requests.post(next_uri, headers=get_headers, json={"from": last_run}).json()
                 # Normalize data frame
                 df_incremental = pd.json_normalize(res, record_path)
                 # Append to the existing Data Frame
@@ -175,37 +188,20 @@ def get_anaplan_paged_data2(uri, token_type, database_file, database_table, reco
             except:
                 # Check status codes
                 StatusExceptions.process_status_exceptions(res, uri)
-        # Drop unsupported SQLite columns from Data Frames
-        # Transform Data Frames columns before updating SQLite
-        match database_table:
-            case "models":
-                # TODO add logic to drop model tables
-                df = df.drop(columns=['categoryValues'])
-                update_table(database_file=database_file,
-                             table=database_table, df=df, mode='append')
-            case "imports" | "exports" | "processes" | "actions":
-                df = df[['id', 'name']]
-                data = {'workspace_id': workspace_id, 'model_id': model_id}
-                df = df.assign(**data)
-                update_table(database_file=database_file,
-                             table=database_table, df=df, mode='append')
-            case "cloudworks":
-                # print(df)
-                df = df.drop(columns=['schedule.daysOfWeek'])
-                # print ('-------------------')
-                # print(df)
-                update_table(database_file=database_file,
-                             table=database_table, df=df, mode='replace')
-            case _:
-                update_table(database_file=database_file,
-                             table=database_table, df=df, mode='replace')
+
+        update_table(database_file=database_file, add_unique_id=add_unique_id,
+                        table=database_table, df=df, mode=mode)
 
         logging.info(
             f'{total_size} {database_table} records received with {count} API call(s)')
         print(
             f'{total_size} {database_table} records received with {count} API call(s)')
-        # Return IDs for future iterations
-        return df['id'].tolist()
+        
+        # Return last run date. If there were no records then simply return the prior last run date.
+        if df.shape[0] == 0:
+            return last_run
+        else:
+            return df['eventDate'].tolist()[-1]
 
     except KeyError:
         # Notification when no data is available for a particular API call
@@ -213,6 +209,12 @@ def get_anaplan_paged_data2(uri, token_type, database_file, database_table, reco
             f'API call successful, but no {record_path} are available in the Workspace/Model combination. Alternatively, please check the {record_path} KeyPath.')
         print(
             f'API call successful, but no {record_path} are available in the Workspace/Model combination. Alternatively, please check the {record_path} KeyPath.')
+
+    except Exception as err:
+        # Check status codes
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        StatusExceptions.process_status_exceptions(res, uri)
         
 
 # ===  Write to tables in the SQLite Database  ===
@@ -273,6 +275,7 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
     # set the SQL query
     if kwargs["select_all_query"]:
         sql = f'SELECT * FROM {kwargs["table"]}'
+        rc_sql = f'SELECT count(*) FROM {kwargs["table"]}'
     else:
         # Open SQL File in read mode
         sql_file = open("./audit_query.sql", "r")
@@ -281,6 +284,11 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
 
         # Update sql with tenant name
         sql = sql.replace('{{tenant_name}}', kwargs['tenant_name'])
+
+        # Update sql with the last run date
+        last_run = kwargs['last_run']
+        sql = f'{sql} \nWHERE e.eventDate>{last_run}'
+        rc_sql = f'SELECT count(*) FROM events e WHERE e.eventDate>{last_run}'
 
         # close file
         sql_file.close()
@@ -293,7 +301,7 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
 
     try: 
         # Retrieve the record count of events
-        cursor.execute(f'SELECT count(*) FROM {kwargs["table"]}')
+        cursor.execute(rc_sql)
         record_count = cursor.fetchone()[0]
 
         # Get the number of chunks and set the Anaplan File Chunk Count
@@ -316,7 +324,7 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
             # Set offset and query chunk
             offset = chunk_size * count
             cursor.execute(f'{sql} \nLIMIT {chunk_size} OFFSET {offset};')
-
+            
             # Convert query to Pandas Data Frame
             df = pd.DataFrame(cursor.fetchall())
             chunk_row_count = len(df.index)

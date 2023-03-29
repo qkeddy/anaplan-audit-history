@@ -2,17 +2,14 @@
     "anaplanTenantName": "Quin Eddy Employee Tenant",
     "writeSampleFilesOverride": false,
     "database": "audit.db3",
-
-    "lastRun":"insert time stamp in epic time",
-
+    "lastRun": 1680112265001,
     "get_device_id_uri": "https://us1a.app.anaplan.com/oauth/device/code",
     "get_tokens_uri": "https://us1a.app.anaplan.com/oauth/token",
-
     "uris": {
         "deviceId": "https://us1a.app.anaplan.com/oauth/device/code",
         "tokens": "https://us1a.app.anaplan.com/oauth/token",
         "users": "https://api.anaplan.com/scim/1/0/v2/Users",
-        "auditEvents": "https://audit.anaplan.com/audit/api/1/events?type=all",
+        "auditEvents": "https://audit.anaplan.com/audit/api/1/events/search",
         "workspaces": "https://api.anaplan.com/2/0/workspaces?tenantDetails=true",
         "models": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models?modelDetails=true",
         "imports": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/imports/",
@@ -22,7 +19,6 @@
         "files": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/files/",
         "cloudWorks": "https://api.cloudworks.anaplan.com/2/0/integrations"
     },
-
     "targetAnaplanModel": {
         "workspace": "Workspace #1",
         "model": "Audit Report",
@@ -32,7 +28,7 @@
                 "acronym": "AC",
                 "table": "act_codes",
                 "selectAllQuery": true,
-                "mode": "replace",
+                "tableDrop": false,
                 "addUniqueId": false
             },
             "usersData": {
@@ -40,7 +36,7 @@
                 "acronym": "USR",
                 "table": "users",
                 "selectAllQuery": true,
-                "mode": "replace",
+                "tableDrop": false,
                 "addUniqueId": true
             },
             "workspacesData": {
@@ -48,7 +44,7 @@
                 "table": "workspaces",
                 "acronym": "WS",
                 "selectAllQuery": true,
-                "mode": "replace",
+                "tableDrop": false,
                 "addUniqueId": true
             },
             "modelsData": {
@@ -56,7 +52,7 @@
                 "acronym": "MOD",
                 "table": "models",
                 "selectAllQuery": true,
-                "mode": "append",
+                "tableDrop": true,
                 "addUniqueId": true
             },
             "actionsData": {
@@ -64,7 +60,7 @@
                 "acronym": "ACT",
                 "table": "actions",
                 "selectAllQuery": true,
-                "mode": "append",
+                "tableDrop": true,
                 "addUniqueId": true
             },
             "filesData": {
@@ -72,7 +68,7 @@
                 "acronym": "FILE",
                 "table": "files",
                 "selectAllQuery": true,
-                "mode": "append",
+                "tableDrop": true,
                 "addUniqueId": true
             },
             "cloudWorksData": {
@@ -80,7 +76,7 @@
                 "acronym": "CW",
                 "table": "cloudworks",
                 "selectAllQuery": true,
-                "mode": "replace",
+                "tableDrop": false,
                 "addUniqueId": true
             },
             "auditData": {
@@ -88,7 +84,8 @@
                 "acronym": "AUDIT",
                 "table": "events",
                 "selectAllQuery": false,
-                "mode": "replace",
+                "mode": "append",
+                "tableDrop": false,
                 "addUniqueId": false
             }
         }
