@@ -2,7 +2,7 @@
     "anaplanTenantName": "Quin Eddy Employee Tenant",
     "writeSampleFilesOverride": false,
     "database": "audit.db3",
-    "lastRun": 1680112265001,
+    "lastRun": 0,
     "get_device_id_uri": "https://us1a.app.anaplan.com/oauth/device/code",
     "get_tokens_uri": "https://us1a.app.anaplan.com/oauth/token",
     "uris": {
@@ -24,7 +24,7 @@
         "model": "Audit Report",
         "targetModelObjects": {
             "activityCodesData": {
-                "importFile": "ACTIVITY_CODES_test.csv",
+                "importFile": "ACTIVITY_CODES.csv",
                 "acronym": "AC",
                 "table": "act_codes",
                 "selectAllQuery": true,
@@ -32,7 +32,7 @@
                 "addUniqueId": false
             },
             "usersData": {
-                "importFile": "USER_LIST_test.csv",
+                "importFile": "USER_LIST.csv",
                 "acronym": "USR",
                 "table": "users",
                 "selectAllQuery": true,
@@ -40,7 +40,7 @@
                 "addUniqueId": true
             },
             "workspacesData": {
-                "importFile": "WORKSPACE_LIST_test.csv",
+                "importFile": "WORKSPACE_LIST.csv",
                 "table": "workspaces",
                 "acronym": "WS",
                 "selectAllQuery": true,
@@ -48,7 +48,7 @@
                 "addUniqueId": true
             },
             "modelsData": {
-                "importFile": "MODEL_LIST_test.csv",
+                "importFile": "MODEL_LIST.csv",
                 "acronym": "MOD",
                 "table": "models",
                 "selectAllQuery": true,
@@ -56,7 +56,7 @@
                 "addUniqueId": true
             },
             "actionsData": {
-                "importFile": "ACTION_LIST_test.csv",
+                "importFile": "ACTION_LIST.csv",
                 "acronym": "ACT",
                 "table": "actions",
                 "selectAllQuery": true,
@@ -64,7 +64,7 @@
                 "addUniqueId": true
             },
             "filesData": {
-                "importFile": "FILE_LIST_test.csv",
+                "importFile": "FILE_LIST.csv",
                 "acronym": "FILE",
                 "table": "files",
                 "selectAllQuery": true,
@@ -72,7 +72,7 @@
                 "addUniqueId": true
             },
             "cloudWorksData": {
-                "importFile": "CLOUDWORKS_LIST_test.csv",
+                "importFile": "CLOUDWORKS_LIST.csv",
                 "acronym": "CW",
                 "table": "cloudworks",
                 "selectAllQuery": true,
@@ -80,7 +80,7 @@
                 "addUniqueId": true
             },
             "auditData": {
-                "importFile": "AUDIT_LOG_test.csv",
+                "importFile": "AUDIT_LOG.csv",
                 "acronym": "AUDIT",
                 "table": "events",
                 "selectAllQuery": false,
