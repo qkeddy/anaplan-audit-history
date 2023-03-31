@@ -17,12 +17,14 @@ def clear_console():
     else:
         os.system("clear")
 
+# === Set Paths ===
+operating_path = os.getcwd()
+
 
 # === Setup Logger ===
 # Dynamically set logfile name based upon current date.
-log_file_path = "./"
 local_time = time.strftime("%Y%m%d", time.localtime())
-log_file = log_file_path + local_time + "-ANAPLAN-RUN.LOG"
+log_file = operating_path + local_time + "-ANAPLAN-RUN.LOG"
 log_file_level = logging.INFO  # Options: INFO, WARNING, DEBUG, INFO, ERROR, CRITICAL
 logging.basicConfig(filename=log_file,
                     filemode='a',  # Append to Log
@@ -34,7 +36,7 @@ logging.info("************** Logger Started ****************")
 # === Read in configuration ===
 def read_configuration_settings():
     try:
-        with open("settings.json", "r") as settings_file:
+        with open(f'{operating_path}/settings.json', 'r') as settings_file:
             settings = json.load(settings_file)
         logging.info("Configuration read in successfully")
         return settings
@@ -47,7 +49,7 @@ def read_configuration_settings():
 # === Update configuration file ===
 def update_configuration_settings(object, value, key):
     try:
-        with open("settings.json", "w") as settings_file:
+        with open(f'{operating_path}/settings.json', 'w') as settings_file:
             object[f'{key}'] = value
             json.dump(object, settings_file, indent=4)
         logging.info("Configuration updated successfully")

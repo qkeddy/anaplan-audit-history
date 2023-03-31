@@ -14,7 +14,7 @@ import AnaplanOps
 # TODO Test w/ no network connection
 # TODO Improve requests error handling
 # TODO add execution of a Process
-# TODO add logic for just the new records
+# TODO option to push all data from SQLite database to Anaplan
 
 
 def main():
