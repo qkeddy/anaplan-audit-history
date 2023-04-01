@@ -16,7 +16,7 @@ import StatusExceptions
 # ===  Load user activity codes from file  ===
 def get_usr_activity_codes(database_file, table):
     try:
-        df = pd.read_csv('activity_events.csv')
+        df = pd.read_csv(f'{Globals.Paths.scripts}/activity_events.csv')
         update_table(database_file=database_file, table=table, df=df, mode='replace')
     except Exception as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
@@ -278,7 +278,7 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
         rc_sql = f'SELECT count(*) FROM {kwargs["table"]}'
     else:
         # Open SQL File in read mode
-        sql_file = open("./audit_query.sql", "r")
+        sql_file = open(f'{Globals.Paths.scripts}/audit_query.sql', 'r')
         # read whole file to a string
         sql = sql_file.read()
 

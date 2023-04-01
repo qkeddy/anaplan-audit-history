@@ -31,7 +31,8 @@ def main():
 	device_id_uri = settings['get_device_id_uri']
 	tokens_uri = settings['get_tokens_uri']
 	register = args.register
-	database_file = settings['database']
+	database_file = f'{Globals.Paths.databases}/{settings["database"]}'
+	token_db = f'{Globals.Paths.databases}/token.db3'
 
 	uris = settings['uris']
 	targetModelObjects = settings['targetAnaplanModel']['targetModelObjects']
@@ -43,17 +44,17 @@ def main():
 	# If register flag is set, then request the user to authenticate with Anaplan to create device code
 	if register:
 		logger.info(f'Registering the device with Client ID: {Globals.Auth.client_id}')
-		AnaplanOauth.get_device_id(device_id_uri)
-		AnaplanOauth.get_tokens(tokens_uri)
+		AnaplanOauth.get_device_id(uri=device_id_uri)
+		AnaplanOauth.get_tokens(uri=tokens_uri, database=token_db)
 
 	else:
 		print('Skipping device registration and refreshing the access_token')
 		logger.info('Skipping device registration and refreshing the access_token')
-		AnaplanOauth.refresh_tokens(tokens_uri, 0)
+		AnaplanOauth.refresh_tokens(uri=tokens_uri, database=token_db, delay=0)
 
 	# Start background thread to refresh the `access_token`
 	refresh_token = AnaplanOauth.refresh_token_thread(
-		1, name="Refresh Token", delay=Globals.Auth.token_ttl, uri=tokens_uri)
+		1, name="Refresh Token", delay=Globals.Auth.token_ttl, uri=tokens_uri, database=database_file)
 	refresh_token.start()
 
 	# Drop tables

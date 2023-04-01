@@ -12,3 +12,10 @@ class Auth:
     access_token: str
     refresh_token: str = "none"  # Set default to `none`
     token_ttl: int = 2000 # Set default to 2000 seconds
+
+
+@dataclass
+class Paths:
+    scripts: str
+    databases: str
+    logs: str

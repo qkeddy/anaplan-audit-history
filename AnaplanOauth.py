@@ -61,7 +61,7 @@ def get_device_id(uri):
 
 # ===  Step #2 - Device grant   ===
 # Response returns a `access_token` and `refresh_token`
-def get_tokens(uri):
+def get_tokens(uri, database):
     # Set Headers
     get_headers = {
         'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ def get_tokens(uri):
         logger.info("Access Token and Refresh Token received")
 
         # Persist token values
-        write_token_db()
+        write_token_db(database)
 
     except:
         # Check status codes
@@ -98,10 +98,10 @@ def get_tokens(uri):
 
 # ===  Step #3 - Device grant  ===
 # Response returns an updated `access_token` and `refresh_token`
-def refresh_tokens(uri, delay):
+def refresh_tokens(uri, database, delay):
     # If the refresh_token is not available then read from `auth.json`
     if Globals.Auth.refresh_token == "none":
-        tokens = read_token_db()
+        tokens = read_token_db(database)
 
         if tokens['client_id'] == "empty":
             logger.warning("This client needs to be authorized by Anaplan. Please run this script again with the following arguments: python3 anaplan.py -r -c <<enter Client ID>>. For more information, use the argument `-h`.")
@@ -144,7 +144,7 @@ def refresh_tokens(uri, delay):
             logger.info("Updated Access Token and Refresh Token received")
 
             # Persist token values
-            write_token_db()
+            write_token_db(database=database)
 
             # If delay is set then continue to refresh the token
             if delay > 0:
@@ -165,35 +165,36 @@ def refresh_tokens(uri, delay):
 # Explicitly set the thread to be a subordinate daemon that will stop processing with main thread
 class refresh_token_thread (threading.Thread):
     # Overriding the default `__init__`
-   def __init__(self, thread_id, name, delay, uri):
+   def __init__(self, thread_id, name, delay, database, uri):
       print('Refresh Token', thread_id, uri)
       threading.Thread.__init__(self)
       self.thread_id = thread_id
       self.name = name
       self.delay = delay
       self.uri = uri
+      self.database = database
       self.daemon = True
 
    # Overriding the default subfunction `run()`
    def run(self):
       # Initiate the thread
       print("Starting " + self.name)
-      refresh_tokens(self.uri, self.delay)
+      refresh_tokens(self.uri, self.database, self.delay)
       print("Exiting " + self.name)
 
 
 
 # === Read a SQLite database ===
-def read_token_db():
+def read_token_db(database):
 
     # Initialize variable
     tokens = {}
 
     # Check if SQLite database exists
-    if os.path.isfile("token.db3"):
+    if os.path.isfile(database):
         # Create connection to the existing database
         connection = apsw.Connection(
-            "token.db3", flags=apsw.SQLITE_OPEN_READONLY)
+            database, flags=apsw.SQLITE_OPEN_READONLY)
 
         # Get values
         for client_id, refresh_token in connection.execute("select client_id, refresh_token from anaplan"):
@@ -207,7 +208,7 @@ def read_token_db():
     return tokens
 
 # === Create or update a SQLite database ===
-def write_token_db():
+def write_token_db(database):
 
     # Encode
     encoded_token = jwt.encode(
@@ -215,14 +216,14 @@ def write_token_db():
     values = (Globals.Auth.client_id, encoded_token)
 
     # Check if SQLite database exists
-    if os.path.isfile("token.db3"):
+    if os.path.isfile(database):
         # Create connection to the existing database
         connection = apsw.Connection(
-            "token.db3", flags=apsw.SQLITE_OPEN_READWRITE)
+            database, flags=apsw.SQLITE_OPEN_READWRITE)
         connection.execute("update anaplan set client_id=$client_id, refresh_token=$refresh_token", values)
     else:
         # Create a new database
-        connection = apsw.Connection("token.db3")
+        connection = apsw.Connection(database)
         connection.execute("create table if not exists anaplan (client_id, refresh_token)")
         connection.execute("insert into anaplan values($client_id, $refresh_token)", values)
 
