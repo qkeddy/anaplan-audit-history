@@ -1,5 +1,5 @@
 # ===============================================================================
-# Description:    Get Anaplan Users
+# Description:    Functions to interface with the Anaplan platform and Anaplan content
 # ===============================================================================
 
 import logging
@@ -11,6 +11,121 @@ import sys
 
 import Globals
 import StatusExceptions
+import utils
+
+def refresh_events(settings):
+    # Isolate values in the settings
+    uris = settings['uris']
+    targetModelObjects = settings['targetAnaplanModel']['targetModelObjects']
+    database_file = f'{Globals.Paths.databases}/{settings["database"]}'
+
+    # Get Events
+    latest_run = get_incremental_audit_events(uri=uris['auditEvents'], token_type="AnaplanAuthToken ", database_file=database_file, database_table=targetModelObjects['auditData']['table'],
+                                                            add_unique_id=targetModelObjects['auditData']['addUniqueId'], mode=targetModelObjects['auditData']['mode'], record_path="response", json_path=['meta', 'paging'], last_run=settings['lastRun'])
+    
+    # If there are no events and last_run has not changed, then exit. Otherwise, continue on.
+    if latest_run > settings['lastRun']:
+
+        # Execute the refresh audit data
+        refresh_sequence(settings=settings,
+                         database_file=database_file,
+                         uris=uris,
+                         targetModelObjects=targetModelObjects)
+
+        # Update `setting.json` with lastRun Date (set by Get Events)
+        utils.update_configuration_settings(
+            object=settings, value=latest_run, key='lastRun')
+
+
+    else:
+        # TODO fill out
+        print("xx")
+        # TODO update Anaplan dashboard with the latest run and status
+
+
+def refresh_sequence(settings, database_file, uris, targetModelObjects):
+
+    # Drop tables
+    for key in targetModelObjects.values():
+        if key['tableDrop']:
+            drop_table(database_file=database_file, table=key['table'])
+
+    # Load User Activity Codes
+    get_usr_activity_codes(
+        database_file=database_file, table=targetModelObjects['activityCodesData']['table'])
+
+    # Get Users
+    get_anaplan_paged_data(uri=uris['users'], token_type="Bearer ", database_file=database_file,
+                                database_table=targetModelObjects['usersData']['table'], add_unique_id=targetModelObjects['usersData']['addUniqueId'], record_path="Resources", page_size_key=['itemsPerPage'], page_index_key=['startIndex'], total_results_key=['totalResults'])
+
+    # Get Workspaces
+    workspace_ids = get_anaplan_paged_data(uri=uris['workspaces'], token_type="Bearer ", database_file=database_file,
+                                                database_table=targetModelObjects['workspacesData']['table'], add_unique_id=targetModelObjects['workspacesData']['addUniqueId'], record_path="workspaces", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], return_id=True)
+
+    # Get Models in all Workspace
+    for ws_id in workspace_ids:
+        model_ids = get_anaplan_paged_data(uri=uris['models'].replace('{{workspace_id}}', ws_id), token_type="Bearer ", database_file=database_file,
+                                                database_table=targetModelObjects['modelsData']['table'], add_unique_id=targetModelObjects['modelsData']['addUniqueId'], record_path="models", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], return_id=True)
+
+        # Loop through each Model to get details
+        for mod_id in model_ids:
+                # Get Import Actions in all Models in all Workspaces
+                get_anaplan_paged_data(uri=uris['imports'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
+                                            database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="imports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+
+                # Get Export Actions in all Models in all Workspaces
+                get_anaplan_paged_data(uri=uris['exports'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
+                                            database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="exports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+
+                # Get Actions in all Models in all Workspaces
+                get_anaplan_paged_data(uri=uris['actions'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
+                                        database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="actions", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+
+                # Get Processes in all Models in all Workspaces
+                get_anaplan_paged_data(uri=uris['processes'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
+                                        database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="processes", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+
+                # Get Files in all Models in all Workspaces
+                get_anaplan_paged_data(uri=uris['files'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
+                                        database_table=targetModelObjects['filesData']['table'], add_unique_id=targetModelObjects['filesData']['addUniqueId'], record_path="files", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+
+    # Get CloudWorks Integrations
+    get_anaplan_paged_data(uri=uris['cloudWorks'], token_type="AnaplanAuthToken ", database_file=database_file,
+                                database_table=targetModelObjects['cloudWorksData']['table'], add_unique_id=targetModelObjects['cloudWorksData']['addUniqueId'], record_path="integrations", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'])
+
+    # Fetch ids for target Workspace and Model from the SQLite database
+    workspace_id = fetch_ids(
+        database_file=database_file, workspace=settings['targetAnaplanModel']['workspace'], type='workspaces')
+    model_id = fetch_ids(
+        database_file=database_file, model=settings['targetAnaplanModel']['model'], type='models', workspace_id=workspace_id)
+
+    # Fetch Import Data Source ids and loop over each target type and upload data
+    write_sample_files = False
+    for key in targetModelObjects.values():
+        id = fetch_ids(
+            database_file=database_file, file=key['importFile'], type='files', workspace_id=workspace_id, model_id=model_id)
+
+        # If a target file is not found in Anaplan, then toggle the creation of sample files
+        if id == -1:
+                logging.warning(print(
+                    "One or more files not found in Anaplan. Creating a sample set of files for upload into Anaplan."))
+                print("One or more files not found in Anaplan. Creating a sample set of files for upload into Anaplan.")
+                write_sample_files = True
+        else:
+            if settings["writeSampleFilesOverride"]:
+                write_sample_files = True
+                logging.info(
+                    "Create Sample files is toggled on. Files will be created in the `/samples directory.")
+                print("Create Sample files is toggled on. Files will be created in the `/samples directory.")
+
+        # Upload data to Anaplan
+        upload_records_to_anaplan(
+            database_file=database_file, token_type="Bearer ", write_sample_files=write_sample_files, workspace_id=workspace_id, model_id=model_id, file_id=id, file_name=key['importFile'], table=key['table'], select_all_query=key['selectAllQuery'], add_unique_id=key['addUniqueId'], acronym=key['acronym'], tenant_name=settings['anaplanTenantName'], last_run=settings['lastRun'])
+
+    # TODO Run Process
+    # List Processes: https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/processes
+    # Run Proces
+
 
 
 # ===  Load user activity codes from file  ===
@@ -242,7 +357,7 @@ def update_table(database_file, table, df, mode, add_unique_id=True):
 # ===  Drop existing tables in the SQLite Database  ===
 def drop_table(database_file, table):
 
-    try: 
+    try:
         # Establish connection to SQLite
         connection = sqlite3.Connection(database_file)
 
@@ -268,9 +383,8 @@ def drop_table(database_file, table):
         sys.exit(1)
 
 
-
 # === Query and Load data to Anaplan  ===
-def upload_records_to_anaplan(database_file, token_type, write_sample_files, chunk_size=15000, ** kwargs):
+def upload_records_to_anaplan(database_file, token_type, write_sample_files, chunk_size=15000, **kwargs):
 
     # set the SQL query
     if kwargs["select_all_query"]:
@@ -299,7 +413,7 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
     # Create a cursor to perform operations on the database
     cursor = connection.cursor()
 
-    try: 
+    try:
         # Retrieve the record count of events
         cursor.execute(rc_sql)
         record_count = cursor.fetchone()[0]
@@ -315,8 +429,10 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
                 'Content-Type': 'application/json',
                 'Authorization': token_type + Globals.Auth.access_token
             })
-            print(f'{record_count} records will be uploaded in {chunk_count} chunks to "{kwargs["file_name"]}"')
-            logging.info(f'{record_count} records will be uploaded in {chunk_count} chunks to "{kwargs["file_name"]}"')
+            print(
+                f'{record_count} records will be uploaded in {chunk_count} chunks to "{kwargs["file_name"]}"')
+            logging.info(
+                f'{record_count} records will be uploaded in {chunk_count} chunks to "{kwargs["file_name"]}"')
 
         # Fetch records and upload to Anaplan by chunk
         count = 0
@@ -324,7 +440,7 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
             # Set offset and query chunk
             offset = chunk_size * count
             cursor.execute(f'{sql} \nLIMIT {chunk_size} OFFSET {offset};')
-            
+
             # Convert query to Pandas Data Frame
             df = pd.DataFrame(cursor.fetchall())
             chunk_row_count = len(df.index)
@@ -338,27 +454,29 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
             if write_sample_files:
                 df = df.head(2000)
 
-            # Convert data frame to CSV with no index and if first chunk include the headers 
+            # Convert data frame to CSV with no index and if first chunk include the headers
             # Create samples files if option is toggled on
             if count == 0:
                 df.columns = [desc[0] for desc in cursor.description]
                 if kwargs["add_unique_id"]:
                     if write_sample_files:
-                        csv_record_set = df.to_csv(f'./samples/{kwargs["file_name"]}', index=True)
+                        csv_record_set = df.to_csv(
+                            f'./samples/{kwargs["file_name"]}', index=True)
                         break
                     else:
                         csv_record_set = df.to_csv(index=True)
                 else:
                     if write_sample_files:
-                        csv_record_set = df.to_csv(f'./samples/{kwargs["file_name"]}', index=False)
+                        csv_record_set = df.to_csv(
+                            f'./samples/{kwargs["file_name"]}', index=False)
                         break
                     else:
-                        csv_record_set = df.to_csv(index=False)    
+                        csv_record_set = df.to_csv(index=False)
             else:
                 if kwargs["add_unique_id"]:
                     csv_record_set = df.to_csv(index=True, header=False)
                 else:
-                    csv_record_set = df.to_csv(index=False, header=False)            
+                    csv_record_set = df.to_csv(index=False, header=False)
 
             uri = f'https://api.anaplan.com/2/0/workspaces/{kwargs["workspace_id"]}/models/{kwargs["model_id"]}/files/{kwargs["file_id"]}/chunks/{count}'
             res = requests.put(uri, data=csv_record_set, headers={
@@ -367,16 +485,19 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
             })
 
             if res.status_code == 204:
-                print(f'Uploaded: {chunk_row_count} records to "{kwargs["file_name"]}"')
-                logging.info(f'Uploaded: {chunk_row_count} records to "{kwargs["file_name"]}"')
+                print(
+                    f'Uploaded: {chunk_row_count} records to "{kwargs["file_name"]}"')
+                logging.info(
+                    f'Uploaded: {chunk_row_count} records to "{kwargs["file_name"]}"')
             else:
-                raise ValueError(f'Failed to upload chunk. Check network connection')
+                raise ValueError(
+                    f'Failed to upload chunk. Check network connection')
 
-            count +=1
-        
+            count += 1
+
         # Close SQLite connection
         connection.close()
-        
+
     except ValueError as ve:
         logging.error(ve)
         print(ve)
@@ -389,7 +510,6 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
         logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
         sys.exit(1)
-
 
 
 # === Fetch Anaplan object IDs used for uploading data to Anaplan  ===
@@ -411,41 +531,54 @@ def fetch_ids(database_file, **kwargs):
                 sql = f'SELECT w.id FROM workspaces w where w.name = "{kwargs["workspace"]}";'
                 cursor.execute(sql)
                 row = cursor.fetchone()
-                if row is None: raise ValueError(f'"{kwargs["workspace"]}" is an invalid file name and not found in Anaplan.')
+                if row is None:
+                    raise ValueError(
+                        f'"{kwargs["workspace"]}" is an invalid file name and not found in Anaplan.')
                 id = row[0]
-                print(f'Found Workspace "{kwargs["workspace"]}" with the ID "{id}"')
-                logging.info(f'Found Workspace "{kwargs["workspace"]}" with the ID "{id}"')
+                print(
+                    f'Found Workspace "{kwargs["workspace"]}" with the ID "{id}"')
+                logging.info(
+                    f'Found Workspace "{kwargs["workspace"]}" with the ID "{id}"')
             case 'models':
                 sql = f'SELECT m.id from models m  WHERE m.currentWorkspaceId = "{kwargs["workspace_id"]}" AND m.name = "{kwargs["model"]}";'
                 cursor.execute(sql)
                 row = cursor.fetchone()
-                if row is None: raise ValueError(f'"{kwargs["model"]}" is an invalid file name and not found in Anaplan.')
+                if row is None:
+                    raise ValueError(
+                        f'"{kwargs["model"]}" is an invalid file name and not found in Anaplan.')
                 id = row[0]
                 print(f'Found Model "{kwargs["model"]}" with the ID "{id}"')
-                logging.info(f'Found Model "{kwargs["model"]}" with the ID "{id}"')
+                logging.info(
+                    f'Found Model "{kwargs["model"]}" with the ID "{id}"')
             case 'actions':
                 sql = f'SELECT a.id FROM actions a WHERE a.workspace_id="{kwargs["workspace_id"]}" AND a.model_id="{kwargs["model_id"]}" AND a.name="{kwargs["action"]}";'
                 cursor.execute(sql)
                 row = cursor.fetchone()
-                if row is None: raise ValueError(f'"{kwargs["action"]}" is an invalid file name and not found in Anaplan.')
+                if row is None:
+                    raise ValueError(
+                        f'"{kwargs["action"]}" is an invalid file name and not found in Anaplan.')
                 id = row[0]
-                print(f'Found Import Action "{kwargs["action"]}" with the ID "{id}"')
-                logging.info(f'Found Import Action "{kwargs["action"]}" with the ID "{id}"')
+                print(
+                    f'Found Import Action "{kwargs["action"]}" with the ID "{id}"')
+                logging.info(
+                    f'Found Import Action "{kwargs["action"]}" with the ID "{id}"')
             case 'files':
                 sql = f'SELECT f.id FROM files f WHERE f.workspace_id="{kwargs["workspace_id"]}" AND f.model_id="{kwargs["model_id"]}" AND f.name="{kwargs["file"]}";'
                 cursor.execute(sql)
                 row = cursor.fetchone()
-                if row is None: raise ValueError(f'"{kwargs["file"]}" is an invalid file name and not found in Anaplan.')
+                if row is None:
+                    raise ValueError(
+                        f'"{kwargs["file"]}" is an invalid file name and not found in Anaplan.')
                 id = row[0]
                 print(f'Found Data File "{kwargs["file"]}" with the ID "{id}"')
-                logging.info(f'Found Data File "{kwargs["file"]}" with the ID "{id}"')
+                logging.info(
+                    f'Found Data File "{kwargs["file"]}" with the ID "{id}"')
 
         # Close SQLite connection
         connection.close()
 
         # Return ID
         return id
-
 
     except ValueError as ve:
         logging.error(ve)

@@ -1,4 +1,11 @@
-SELECT *  FROM events e
+SELECT *  FROM events e;
+
+SELECT count(*)  FROM events e WHERE e.eventDate >  1680094087000;
+
+DROP table events ;
+
+PRAGMA table_info(events);
+
 
 SELECT count(*) FROM events e ;
 
@@ -90,5 +97,6 @@ LEFT JOIN models m2 ON e.objectId = m2.id
 LEFT JOIN cloudworks cw on e.objectId = cw.integrationId 
 LEFT JOIN act_codes ac on e.eventTypeId = ac.[Event Code]
 LEFT JOIN actions a on e."additionalAttributes.actionId" || e.objectId  = a.id || a.model_id 
+WHERE e.eventDate > 1680000031000
 LIMIT 15000 OFFSET 0;
 
