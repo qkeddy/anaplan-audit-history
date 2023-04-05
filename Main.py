@@ -30,7 +30,7 @@ def main():
 
 	# Set OAuth Client ID and if the TTL is provided via the CLI, then override the default in the `dataclass`
 	Globals.Auth.client_id = args.client_id
-	if args.token_ttl != "":
+	if args.token_ttl == "":
 		Globals.Auth.token_ttl = int(args.token_ttl)
 
 	# If register flag is set, then request the user to authenticate with Anaplan to create device code

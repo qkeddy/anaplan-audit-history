@@ -12,7 +12,9 @@ import sys
 import Globals
 import StatusExceptions
 import utils
+import DatabaseOps as db
 
+# ===  Fetch audit events from Anaplan. If there are no events then stop process ===
 def refresh_events(settings):
     # Isolate values in the settings
     uris = settings['uris']
@@ -43,12 +45,13 @@ def refresh_events(settings):
         # TODO update Anaplan dashboard with the latest run and status
 
 
+# ===  If there are new events then refresh Anaplan object and upload the latest data to Anaplan ===
 def refresh_sequence(settings, database_file, uris, targetModelObjects):
 
     # Drop tables
     for key in targetModelObjects.values():
         if key['tableDrop']:
-            drop_table(database_file=database_file, table=key['table'])
+            db.drop_table(database_file=database_file, table=key['table'])
 
     # Load User Activity Codes
     get_usr_activity_codes(
@@ -132,7 +135,7 @@ def refresh_sequence(settings, database_file, uris, targetModelObjects):
 def get_usr_activity_codes(database_file, table):
     try:
         df = pd.read_csv(f'{Globals.Paths.scripts}/activity_events.csv')
-        update_table(database_file=database_file, table=table, df=df, mode='replace')
+        db.update_table(database_file=database_file, table=table, df=df, mode='replace')
     except Exception as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
         logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
@@ -211,24 +214,24 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, add_u
         match database_table:
             case "users":
                 df = df[['id', 'userName', 'displayName']]
-                update_table(database_file=database_file, add_unique_id=add_unique_id,
+                db.update_table(database_file=database_file, add_unique_id=add_unique_id,
                              table=database_table, df=df, mode='replace')
             case "models":
                 df = df.drop(columns=['categoryValues'])
-                update_table(database_file=database_file, add_unique_id=add_unique_id,
+                db.update_table(database_file=database_file, add_unique_id=add_unique_id,
                              table=database_table, df=df, mode='append')
             case "imports" | "exports" | "processes" | "actions" | "files":
                 df = df[['id', 'name']]
                 data = {'workspace_id': workspace_id, 'model_id': model_id}
                 df = df.assign(**data)
-                update_table(database_file=database_file,
+                db.update_table(database_file=database_file,
                              table=database_table, add_unique_id=add_unique_id,df=df, mode='append')
             case "cloudworks":
                 df = df.drop(columns=['schedule.daysOfWeek'])
-                update_table(database_file=database_file, add_unique_id=add_unique_id,
+                db.update_table(database_file=database_file, add_unique_id=add_unique_id,
                              table=database_table, df=df, mode='replace')
             case _:
-                update_table(database_file=database_file, add_unique_id=add_unique_id,
+                db.update_table(database_file=database_file, add_unique_id=add_unique_id,
                              table=database_table, df=df, mode='replace')
 
         logging.info(
@@ -254,6 +257,7 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, add_u
         StatusExceptions.process_status_exceptions(res, uri)
 
 
+# ===  Get Anaplan Audit Events ===
 def get_incremental_audit_events(uri, token_type, database_file, database_table, mode, record_path, add_unique_id, json_path, last_run):
     get_headers = {
         'Content-Type': 'application/json',
@@ -304,7 +308,7 @@ def get_incremental_audit_events(uri, token_type, database_file, database_table,
                 # Check status codes
                 StatusExceptions.process_status_exceptions(res, uri)
 
-        update_table(database_file=database_file, add_unique_id=add_unique_id,
+        db.update_table(database_file=database_file, add_unique_id=add_unique_id,
                         table=database_table, df=df, mode=mode)
 
         logging.info(
@@ -331,57 +335,6 @@ def get_incremental_audit_events(uri, token_type, database_file, database_table,
         logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
         StatusExceptions.process_status_exceptions(res, uri)
         
-
-# ===  Write to tables in the SQLite Database  ===
-def update_table(database_file, table, df, mode, add_unique_id=True):
-    try:
-        # Establish connection to SQLite 
-        connection = sqlite3.Connection(database_file)
-
-        # Write the contents of Data Frame to the SQLlite table. If unique_id is false, then a new ID will be generated when uploaded to Anaplan
-        if add_unique_id: 
-            df.to_sql(name=table, con=connection, if_exists=mode, index=False) 
-        else: 
-            df.to_sql(name=table, con=connection, if_exists=mode, index=True)
-
-        # Commit data and close connection
-        connection.commit()
-        connection.close()
-
-    except Exception as err:
-        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        sys.exit(1)
-
-
-# ===  Drop existing tables in the SQLite Database  ===
-def drop_table(database_file, table):
-
-    try:
-        # Establish connection to SQLite
-        connection = sqlite3.Connection(database_file)
-
-        # Create a cursor to perform operations on the database
-        cursor = connection.cursor()
-
-        # Dropping the specified table
-        cursor.execute(f"DROP TABLE {table}")
-        logging.info(f'Table `{table}` has been dropped')
-        print(f'Table `{table}` has been dropped')
-
-        # Commit data and close connection
-        connection.commit()
-        connection.close()
-
-    except sqlite3.Error as err:
-        logging.warning(f'Table `{table}` does not exist')
-        print(f'Table `{table}` does not exist')
-
-    except Exception as err:
-        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        sys.exit(1)
-
 
 # === Query and Load data to Anaplan  ===
 def upload_records_to_anaplan(database_file, token_type, write_sample_files, chunk_size=15000, **kwargs):
