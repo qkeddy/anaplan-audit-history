@@ -215,8 +215,10 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, add_u
                 print(err)
                 break
             except requests.exceptions.HTTPError as err:
-                print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-                logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+                print(
+                    f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+                logging.error(
+                    f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
                 sys.exit(1)
             except requests.exceptions.RequestException as err:
                 print(f'{err} in function "{sys._getframe().f_code.co_name}"')
@@ -268,8 +270,10 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, add_u
         print(
             f'API call successful, but no {record_path} are available in the Workspace/Model combination. Alternatively, please check the "{record_path}" KeyPath.')
     except requests.exceptions.HTTPError as err:
-        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        print(
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+        logging.error(
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
         sys.exit(1)
     except requests.exceptions.RequestException as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
@@ -338,8 +342,10 @@ def get_incremental_audit_events(uri, token_type, database_file, database_table,
             except AttributeError:
                 break
             except requests.exceptions.HTTPError as err:
-                print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-                logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+                print(
+                    f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+                logging.error(
+                    f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
                 sys.exit(1)
             except requests.exceptions.RequestException as err:
                 print(f'{err} in function "{sys._getframe().f_code.co_name}"')
@@ -373,8 +379,10 @@ def get_incremental_audit_events(uri, token_type, database_file, database_table,
             f'API call successful, but no {record_path} are available in the Workspace/Model combination. Alternatively, please check the {record_path} KeyPath.')
 
     except requests.exceptions.HTTPError as err:
-        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        print(
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+        logging.error(
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
         sys.exit(1)
     except requests.exceptions.RequestException as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
@@ -515,8 +523,10 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
         logger.error(f'SQL error: {err.args} /  SQL Statement: {sql}')
 
     except requests.exceptions.HTTPError as err:
-        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        print(
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+        logging.error(
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
         sys.exit(1)
     except requests.exceptions.RequestException as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')

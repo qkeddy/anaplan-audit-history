@@ -59,8 +59,10 @@ def get_device_id(uri):
         input("Press Enter to continue...")
     
     except requests.exceptions.HTTPError as err:
-        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        print(
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+        logging.error(
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
         sys.exit(1)
     except requests.exceptions.RequestException as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
@@ -109,8 +111,10 @@ def get_tokens(uri, database):
         write_token_db(database)
 
     except requests.exceptions.HTTPError as err:
-        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        print(
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+        logging.error(
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
         sys.exit(1)
     except requests.exceptions.RequestException as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
@@ -155,6 +159,7 @@ def refresh_tokens(uri, database, delay):
             "refresh_token": Globals.Auth.refresh_token,
             "grant_type": "refresh_token"
         }
+
         res = None
         try:
             logger.info("Requesting a new OAuth Access Token and Refresh Token")
@@ -182,8 +187,10 @@ def refresh_tokens(uri, database, delay):
                 break
         
         except requests.exceptions.HTTPError as err:
-            print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-            logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+            print(
+                f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+            logging.error(
+                f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
             sys.exit(1)
         except requests.exceptions.RequestException as err:
             print(f'{err} in function "{sys._getframe().f_code.co_name}"')
