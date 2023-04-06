@@ -133,7 +133,6 @@ def refresh_sequence(settings, database_file, uris, targetModelObjects):
             database_file=database_file, token_type="Bearer ", write_sample_files=write_sample_files, workspace_id=workspace_id, model_id=model_id, file_id=id, file_name=key['importFile'], table=key['table'], select_all_query=key['selectAllQuery'], add_unique_id=key['addUniqueId'], acronym=key['acronym'], tenant_name=settings['anaplanTenantName'], last_run=settings['lastRun'])
 
 
-
 # ===  Load user activity codes from file  ===
 def get_usr_activity_codes(database_file, table):
     try:
@@ -142,6 +141,117 @@ def get_usr_activity_codes(database_file, table):
     except Exception as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
         logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+
+
+# ===  Get Anaplan Audit Events ===
+def get_incremental_audit_events(uri, token_type, database_file, database_table, mode, record_path, add_unique_id, json_path, last_run):
+    get_headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': token_type + Globals.Auth.access_token
+    }
+    res = None
+    count = 1
+    try:
+        # Initial endpoint query
+        print(uri)
+
+        # Create empty DataFrame with specific column names & types
+        # If additional fields are required, then this will need to be updated.
+        df_initialize = pd.DataFrame({'index': pd.Series(dtype='int'), 'id': pd.Series(dtype='int'), 'eventTypeId': pd.Series(dtype='str'), 'userId': pd.Series(dtype='str'), 'tenantId': pd.Series(dtype='str'), 'objectId': pd.Series(dtype='str'), 'message': pd.Series(dtype='str'), 'success': pd.Series(dtype='bool'), 'errorNumber': pd.Series(dtype='str'), 'ipAddress': pd.Series(dtype='str'), 'userAgent': pd.Series(dtype='str'), 'sessionId': pd.Series(dtype='str'), 'hostName': pd.Series(dtype='str'), 'serviceVersion': pd.Series(dtype='str'), 'eventDate': pd.Series(dtype='int'), 'eventTimeZone': pd.Series(dtype='str'), 'createdDate': pd.Series(dtype='int'), 'createdTimeZone': pd.Series(dtype='str'), 'checksum': pd.Series(dtype='str'), 'objectTypeId': pd.Series(dtype='str'), 'objectTenantId': pd.Series(dtype='str'), 'additionalAttributes.workspaceId': pd.Series(dtype='str'), 'additionalAttributes.actionId': pd.Series(
+            dtype='str'), 'additionalAttributes.name': pd.Series(dtype='str'), 'additionalAttributes.type': pd.Series(dtype='str'), 'additionalAttributes.auth_id': pd.Series(dtype='str'), 'additionalAttributes.modelAccessLevel': pd.Series(dtype='str'), 'additionalAttributes.modelId': pd.Series(dtype='str'), 'additionalAttributes.modelRoleName': pd.Series(dtype='str'), 'additionalAttributes.modelRoleId': pd.Series(dtype='str'), 'additionalAttributes.active': pd.Series(dtype='str'), 'additionalAttributes.actionName': pd.Series(dtype='str'), 'additionalAttributes.nux_visible': pd.Series(dtype='str'), 'additionalAttributes.roleId': pd.Series(dtype='str'), 'additionalAttributes.roleName': pd.Series(dtype='str'), 'additionalAttributes.objectTypeId': pd.Series(dtype='str'), 'additionalAttributes.objectTenantId': pd.Series(dtype='str'), 'additionalAttributes.objectId': pd.Series(dtype='str')})
+
+        # Offset the last_run date by 1 millisecond
+        if last_run != 0:
+            last_run = last_run + 1
+
+        # Set request with `last_run` value
+        res = requests.post(uri, headers=get_headers, json={"from": last_run})
+
+        # Check for unfavorable status codes
+        res.raise_for_status()
+
+        # Convert response to JSON and then to a data frame
+        res = res.json()
+        df = pd.json_normalize(res, record_path)
+
+        # # Append to the initialized Data Frame
+        df = pd.concat([df_initialize, df], ignore_index=True)
+
+        total_size = res[json_path[0]][json_path[1]]['totalSize']
+        while True:
+            try:
+                # Find key in json path
+                next_uri = res[json_path[0]][json_path[1]]['nextUrl']
+                # Get the next request
+                print(next_uri)
+                res = requests.post(
+                    next_uri, headers=get_headers, json={"from": last_run})
+                # Check for unfavorable status codes
+                res.raise_for_status()
+                # Convert response to JSON and then to a data frame
+                res = res.json()
+                df_incremental = pd.json_normalize(res, record_path)
+                # Append to the existing Data Frame
+                df = pd.concat([df, df_incremental], ignore_index=True)
+                count += 1
+            except KeyError:
+                # Stop looping when key cannot be found
+                break
+            except AttributeError:
+                break
+            except requests.exceptions.HTTPError as err:
+                print(
+                    f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+                logging.error(
+                    f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+                sys.exit(1)
+            except requests.exceptions.RequestException as err:
+                print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+                logging.error(
+                    f'{err} in function "{sys._getframe().f_code.co_name}"')
+                sys.exit(1)
+            except Exception as err:
+                print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+                logging.error(
+                    f'{err} in function "{sys._getframe().f_code.co_name}"')
+                sys.exit(1)
+
+        db.update_table(database_file=database_file, add_unique_id=add_unique_id,
+                        table=database_table, df=df, mode=mode)
+
+        logger.info(
+            f'{total_size} {database_table} records received with {count} API call(s)')
+        print(
+            f'{total_size} {database_table} records received with {count} API call(s)')
+
+        # Return last run date. If there were no records then simply return the prior last run date.
+        if df.shape[0] == 0:
+            return last_run
+        else:
+            return df['eventDate'].tolist()[-1]
+
+    except KeyError:
+        # Notification when no data is available for a particular API call
+        logger.info(
+            f'API call successful, but no {record_path} are available in the Workspace/Model combination. Alternatively, please check the {record_path} KeyPath.')
+        print(
+            f'API call successful, but no {record_path} are available in the Workspace/Model combination. Alternatively, please check the {record_path} KeyPath.')
+
+    except requests.exceptions.HTTPError as err:
+        print(
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+        logging.error(
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+        sys.exit(1)
+    except requests.exceptions.RequestException as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+    except Exception as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
         sys.exit(1)
 
 
@@ -285,115 +395,88 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, add_u
         sys.exit(1)
 
 
+# === Fetch Anaplan object IDs used for uploading data to Anaplan  ===
+def fetch_ids(database_file, **kwargs):
+    # Establish connection to SQLite
+    connection = sqlite3.Connection(database_file)
 
-# ===  Get Anaplan Audit Events ===
-def get_incremental_audit_events(uri, token_type, database_file, database_table, mode, record_path, add_unique_id, json_path, last_run):
-    get_headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': token_type + Globals.Auth.access_token
-    }
-    res = None
-    count = 1
+    # Create a cursor to perform operations on the database
+    cursor = connection.cursor()
+
+    # Initialize variables
+    sql = ""
+
+    # For each object execute specific SQL to identify the ID
+    id = ""
     try:
-        # Initial endpoint query
-        print(uri)
-
-        # Create empty DataFrame with specific column names & types
-        # If additional fields are required, then this will need to be updated.
-        df_initialize = pd.DataFrame({'index': pd.Series(dtype='int'), 'id': pd.Series(dtype='int'), 'eventTypeId': pd.Series(dtype='str'), 'userId': pd.Series(dtype='str'), 'tenantId': pd.Series(dtype='str'), 'objectId': pd.Series(dtype='str'), 'message': pd.Series(dtype='str'), 'success': pd.Series(dtype='bool'), 'errorNumber': pd.Series(dtype='str'), 'ipAddress': pd.Series(dtype='str'), 'userAgent': pd.Series(dtype='str'), 'sessionId': pd.Series(dtype='str'), 'hostName': pd.Series(dtype='str'), 'serviceVersion': pd.Series(dtype='str'), 'eventDate': pd.Series(dtype='int'), 'eventTimeZone': pd.Series(dtype='str'), 'createdDate': pd.Series(dtype='int'), 'createdTimeZone': pd.Series(dtype='str'), 'checksum': pd.Series(dtype='str'), 'objectTypeId': pd.Series(dtype='str'), 'objectTenantId': pd.Series(dtype='str'), 'additionalAttributes.workspaceId': pd.Series(dtype='str'), 'additionalAttributes.actionId': pd.Series(dtype='str'), 'additionalAttributes.name': pd.Series(dtype='str'), 'additionalAttributes.type': pd.Series(dtype='str'), 'additionalAttributes.auth_id': pd.Series(dtype='str'), 'additionalAttributes.modelAccessLevel': pd.Series(dtype='str'), 'additionalAttributes.modelId': pd.Series(dtype='str'), 'additionalAttributes.modelRoleName': pd.Series(dtype='str'), 'additionalAttributes.modelRoleId': pd.Series(dtype='str'), 'additionalAttributes.active': pd.Series(dtype='str'), 'additionalAttributes.actionName': pd.Series(dtype='str'), 'additionalAttributes.nux_visible': pd.Series(dtype='str'), 'additionalAttributes.roleId': pd.Series(dtype='str'), 'additionalAttributes.roleName': pd.Series(dtype='str'), 'additionalAttributes.objectTypeId': pd.Series(dtype='str'), 'additionalAttributes.objectTenantId': pd.Series(dtype='str'), 'additionalAttributes.objectId': pd.Series(dtype='str')})
-
-        # Offset the last_run date by 1 millisecond
-        if last_run != 0:
-            last_run = last_run + 1
-
-        # Set request with `last_run` value
-        res = requests.post(uri, headers=get_headers, json={"from": last_run})
-
-        # Check for unfavorable status codes
-        res.raise_for_status()
-
-        # Convert response to JSON and then to a data frame
-        res = res.json()
-        df = pd.json_normalize(res, record_path)
-
-        # # Append to the initialized Data Frame
-        df = pd.concat([df_initialize, df], ignore_index=True)
-
-        total_size = res[json_path[0]][json_path[1]]['totalSize']
-        while True:
-            try:
-                # Find key in json path
-                next_uri = res[json_path[0]][json_path[1]]['nextUrl']
-                # Get the next request
-                print(next_uri)
-                res = requests.post(next_uri, headers=get_headers, json={"from": last_run})
-                # Check for unfavorable status codes
-                res.raise_for_status()
-                # Convert response to JSON and then to a data frame
-                res = res.json()
-                df_incremental = pd.json_normalize(res, record_path)
-                # Append to the existing Data Frame
-                df = pd.concat([df, df_incremental], ignore_index=True)
-                count += 1
-            except KeyError:
-                # Stop looping when key cannot be found
-                break
-            except AttributeError:
-                break
-            except requests.exceptions.HTTPError as err:
+        match kwargs["type"]:
+            case 'workspaces':
+                sql = f'SELECT w.id FROM workspaces w where w.name = "{kwargs["workspace"]}";'
+                cursor.execute(sql)
+                row = cursor.fetchone()
+                if row is None:
+                    raise ValueError(
+                        f'"{kwargs["workspace"]}" is an invalid file name and not found in Anaplan.')
+                id = row[0]
                 print(
-                    f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-                logging.error(
-                    f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-                sys.exit(1)
-            except requests.exceptions.RequestException as err:
-                print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-                logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
-                sys.exit(1)
-            except Exception as err:
-                print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-                logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
-                sys.exit(1)
+                    f'Found Workspace "{kwargs["workspace"]}" with the ID "{id}"')
+                logger.info(
+                    f'Found Workspace "{kwargs["workspace"]}" with the ID "{id}"')
+            case 'models':
+                sql = f'SELECT m.id from models m  WHERE m.currentWorkspaceId = "{kwargs["workspace_id"]}" AND m.name = "{kwargs["model"]}";'
+                cursor.execute(sql)
+                row = cursor.fetchone()
+                if row is None:
+                    raise ValueError(
+                        f'"{kwargs["model"]}" is an invalid file name and not found in Anaplan.')
+                id = row[0]
+                print(f'Found Model "{kwargs["model"]}" with the ID "{id}"')
+                logger.info(
+                    f'Found Model "{kwargs["model"]}" with the ID "{id}"')
+            case 'actions':
+                sql = f'SELECT a.id FROM actions a WHERE a.workspace_id="{kwargs["workspace_id"]}" AND a.model_id="{kwargs["model_id"]}" AND a.name="{kwargs["action"]}";'
+                cursor.execute(sql)
+                row = cursor.fetchone()
+                if row is None:
+                    raise ValueError(
+                        f'"{kwargs["action"]}" is an invalid file name and not found in Anaplan.')
+                id = row[0]
+                print(
+                    f'Found Import Action "{kwargs["action"]}" with the ID "{id}"')
+                logger.info(
+                    f'Found Import Action "{kwargs["action"]}" with the ID "{id}"')
+            case 'files':
+                sql = f'SELECT f.id FROM files f WHERE f.workspace_id="{kwargs["workspace_id"]}" AND f.model_id="{kwargs["model_id"]}" AND f.name="{kwargs["file"]}";'
+                cursor.execute(sql)
+                row = cursor.fetchone()
+                if row is None:
+                    raise ValueError(
+                        f'"{kwargs["file"]}" is an invalid file name and not found in Anaplan.')
+                id = row[0]
+                print(f'Found Data File "{kwargs["file"]}" with the ID "{id}"')
+                logger.info(
+                    f'Found Data File "{kwargs["file"]}" with the ID "{id}"')
 
+        # Close SQLite connection
+        connection.close()
 
-        db.update_table(database_file=database_file, add_unique_id=add_unique_id,
-                        table=database_table, df=df, mode=mode)
+        # Return ID
+        return id
 
-        logger.info(
-            f'{total_size} {database_table} records received with {count} API call(s)')
-        print(
-            f'{total_size} {database_table} records received with {count} API call(s)')
-        
-        # Return last run date. If there were no records then simply return the prior last run date.
-        if df.shape[0] == 0:
-            return last_run
-        else:
-            return df['eventDate'].tolist()[-1]
+    except ValueError as ve:
+        logger.error(ve)
+        print(ve)
+        return -1
 
-    except KeyError:
-        # Notification when no data is available for a particular API call
-        logger.info(
-            f'API call successful, but no {record_path} are available in the Workspace/Model combination. Alternatively, please check the {record_path} KeyPath.')
-        print(
-            f'API call successful, but no {record_path} are available in the Workspace/Model combination. Alternatively, please check the {record_path} KeyPath.')
+    except sqlite3.Error as err:
+        print(f'SQL error: {err.args} /  SQL Statement: {sql}')
+        logger.error(f'SQL error: {err.args} /  SQL Statement: {sql}')
 
-    except requests.exceptions.HTTPError as err:
-        print(
-            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-        logging.error(
-            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-        sys.exit(1)
-    except requests.exceptions.RequestException as err:
-        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        sys.exit(1)
     except Exception as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
         sys.exit(1)
 
-        
 
 # === Query and Load data to Anaplan  ===
 def upload_records_to_anaplan(database_file, token_type, write_sample_files, chunk_size=15000, **kwargs):
@@ -538,90 +621,7 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
         sys.exit(1)
 
 
-
-# === Fetch Anaplan object IDs used for uploading data to Anaplan  ===
-def fetch_ids(database_file, **kwargs):
-    # Establish connection to SQLite
-    connection = sqlite3.Connection(database_file)
-
-    # Create a cursor to perform operations on the database
-    cursor = connection.cursor()
-
-    # Initialize variables
-    sql = ""
-
-    # For each object execute specific SQL to identify the ID
-    id = ""
-    try:
-        match kwargs["type"]:
-            case 'workspaces':
-                sql = f'SELECT w.id FROM workspaces w where w.name = "{kwargs["workspace"]}";'
-                cursor.execute(sql)
-                row = cursor.fetchone()
-                if row is None:
-                    raise ValueError(
-                        f'"{kwargs["workspace"]}" is an invalid file name and not found in Anaplan.')
-                id = row[0]
-                print(
-                    f'Found Workspace "{kwargs["workspace"]}" with the ID "{id}"')
-                logger.info(
-                    f'Found Workspace "{kwargs["workspace"]}" with the ID "{id}"')
-            case 'models':
-                sql = f'SELECT m.id from models m  WHERE m.currentWorkspaceId = "{kwargs["workspace_id"]}" AND m.name = "{kwargs["model"]}";'
-                cursor.execute(sql)
-                row = cursor.fetchone()
-                if row is None:
-                    raise ValueError(
-                        f'"{kwargs["model"]}" is an invalid file name and not found in Anaplan.')
-                id = row[0]
-                print(f'Found Model "{kwargs["model"]}" with the ID "{id}"')
-                logger.info(
-                    f'Found Model "{kwargs["model"]}" with the ID "{id}"')
-            case 'actions':
-                sql = f'SELECT a.id FROM actions a WHERE a.workspace_id="{kwargs["workspace_id"]}" AND a.model_id="{kwargs["model_id"]}" AND a.name="{kwargs["action"]}";'
-                cursor.execute(sql)
-                row = cursor.fetchone()
-                if row is None:
-                    raise ValueError(
-                        f'"{kwargs["action"]}" is an invalid file name and not found in Anaplan.')
-                id = row[0]
-                print(
-                    f'Found Import Action "{kwargs["action"]}" with the ID "{id}"')
-                logger.info(
-                    f'Found Import Action "{kwargs["action"]}" with the ID "{id}"')
-            case 'files':
-                sql = f'SELECT f.id FROM files f WHERE f.workspace_id="{kwargs["workspace_id"]}" AND f.model_id="{kwargs["model_id"]}" AND f.name="{kwargs["file"]}";'
-                cursor.execute(sql)
-                row = cursor.fetchone()
-                if row is None:
-                    raise ValueError(
-                        f'"{kwargs["file"]}" is an invalid file name and not found in Anaplan.')
-                id = row[0]
-                print(f'Found Data File "{kwargs["file"]}" with the ID "{id}"')
-                logger.info(
-                    f'Found Data File "{kwargs["file"]}" with the ID "{id}"')
-
-        # Close SQLite connection
-        connection.close()
-
-        # Return ID
-        return id
-
-    except ValueError as ve:
-        logger.error(ve)
-        print(ve)
-        return -1
-
-    except sqlite3.Error as err:
-        print(f'SQL error: {err.args} /  SQL Statement: {sql}')
-        logger.error(f'SQL error: {err.args} /  SQL Statement: {sql}')
-
-    except Exception as err:
-        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        sys.exit(1)
-
-
+# === Query and Load data to Anaplan  ===
 def execute_process():
     # TODO Run Process
     # List Processes: https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/processes
