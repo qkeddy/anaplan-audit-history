@@ -6,6 +6,9 @@ import logging
 import sqlite3
 import sys
 
+# Enable logger
+logger = logging.getLogger(__name__)
+
 
 # ===  Write to tables in the SQLite Database  ===
 def update_table(database_file, table, df, mode, add_unique_id=True):
@@ -24,12 +27,12 @@ def update_table(database_file, table, df, mode, add_unique_id=True):
         connection.close()
 
     except sqlite3.Error as err:
-        logging.warning(f'Table `{table}` does not exist')
+        logger.warning(f'Table `{table}` does not exist')
         print(f'Table `{table}` does not exist')
 
     except Exception as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
         sys.exit(1)
 
 
@@ -45,7 +48,7 @@ def drop_table(database_file, table):
 
         # Dropping the specified table
         cursor.execute(f"DROP TABLE {table}")
-        logging.info(f'Table `{table}` has been dropped')
+        logger.info(f'Table `{table}` has been dropped')
         print(f'Table `{table}` has been dropped')
 
         # Commit data and close connection
@@ -53,10 +56,10 @@ def drop_table(database_file, table):
         connection.close()
 
     except sqlite3.Error as err:
-        logging.warning(f'Table `{table}` does not exist')
+        logger.warning(f'Table `{table}` does not exist')
         print(f'Table `{table}` does not exist')
 
     except Exception as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
         sys.exit(1)

@@ -13,7 +13,7 @@ import apsw
 import apsw.ext
 import jwt
 import Globals
-import StatusExceptions
+
 
 
 # Enable logger
@@ -46,6 +46,9 @@ def get_device_id(uri):
         # Convert payload to dictionary for parsing
         j_res = json.loads(res.text)
 
+        # Check for unfavorable status codes
+        res.raise_for_status()
+
         # Set values
         Globals.Auth.device_code = j_res['device_code']
         logger.info("Device Code successfully received")
@@ -54,9 +57,20 @@ def get_device_id(uri):
         print('Please authenticate with Anaplan using this URL using an incognito browser: ',
               j_res['verification_uri_complete'])
         input("Press Enter to continue...")
-    except:
-        # Check status codes
-        StatusExceptions.process_status_exceptions(res, uri)
+    
+    except requests.exceptions.HTTPError as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+    except requests.exceptions.RequestException as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+    except Exception as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+
 
 
 # ===  Step #2 - Device grant   ===
@@ -80,6 +94,9 @@ def get_tokens(uri, database):
         logger.info("Requesting OAuth Access Token and Refresh Token")
         res = requests.post(uri, headers=get_headers, json=get_body)
 
+        # Check for unfavorable status codes
+        res.raise_for_status()
+
         # Convert payload to dictionary for parsing
         j_res = json.loads(res.text)
 
@@ -91,9 +108,19 @@ def get_tokens(uri, database):
         # Persist token values
         write_token_db(database)
 
-    except:
-        # Check status codes
-        StatusExceptions.process_status_exceptions(res, uri)
+    except requests.exceptions.HTTPError as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+    except requests.exceptions.RequestException as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+    except Exception as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+
 
 
 # ===  Step #3 - Device grant  ===
@@ -130,10 +157,12 @@ def refresh_tokens(uri, database, delay):
         }
         res = None
         try:
-            logger.info(
-                "Requesting a new OAuth Access Token and Refresh Token")
+            logger.info("Requesting a new OAuth Access Token and Refresh Token")
             print("Requesting a new OAuth Access Token and Refresh Token")
             res = requests.post(uri, headers=get_headers, json=get_body)
+
+            # Check for unfavorable status codes
+            res.raise_for_status()
 
             # Convert payload to dictionary for parsing
             j_res = json.loads(res.text)
@@ -151,13 +180,20 @@ def refresh_tokens(uri, database, delay):
                 time.sleep(delay)
             else:
                 break
+        
+        except requests.exceptions.HTTPError as err:
+            print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+            logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+            sys.exit(1)
+        except requests.exceptions.RequestException as err:
+            print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+            logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+            sys.exit(1)
+        except Exception as err:
+            print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+            logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+            sys.exit(1)
 
-        except:
-            # Check status codes
-            StatusExceptions.process_status_exceptions(res, uri)
-            logger.error("Error updating access and refresh tokens")
-            print("Error updating access and refresh tokens")
-            break
 
 
 # ===  Refresh token class  ===
@@ -206,6 +242,8 @@ def read_token_db(database):
         tokens = {"client_id": "empty", "refresh_token": "empty"}
 
     return tokens
+
+
 
 # === Create or update a SQLite database ===
 def write_token_db(database):

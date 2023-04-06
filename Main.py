@@ -5,33 +5,30 @@
 import sys
 import logging
 
-import utils
+import Utils
 import AnaplanOauth
 import Globals
 import AnaplanOps
 
 # TODO add error handling for missing kwargs error
-# TODO Test w/ no network connection
-# TODO Improve requests error handling
 # TODO add execution of a Process
 # TODO option to push all data from SQLite database to Anaplan
 # TODO option to load all data from audit regardless of last incremental run
-# TODO add blank header if there are no records
 
 
 
 def main():
 	# Clear the console
-	utils.clear_console()
+	Utils.clear_console()
 
 	# Enable logging
 	logger = logging.getLogger(__name__)
 
 	# Get configurations from `settings.json` file
-	settings = utils.read_configuration_settings()
+	settings = Utils.read_configuration_settings()
 
 	# Get configurations from the CLI
-	args = utils.read_cli_arguments()
+	args = Utils.read_cli_arguments()
 	register = args.register
 
 	# Set SQLite database for token database
