@@ -8,6 +8,8 @@ import pandas as pd
 import sqlite3
 import math
 import sys
+import json
+import time
 
 import Globals
 import Utils
@@ -26,8 +28,8 @@ def refresh_events(settings):
 
     # Get Events
     latest_run = get_incremental_audit_events(uri=uris['auditEvents'], token_type="AnaplanAuthToken ", database_file=database_file, database_table=targetModelObjects['auditData']['table'],
-                                                            add_unique_id=targetModelObjects['auditData']['addUniqueId'], mode=targetModelObjects['auditData']['mode'], record_path="response", json_path=['meta', 'paging'], last_run=settings['lastRun'])
-    
+                                              add_unique_id=targetModelObjects['auditData']['addUniqueId'], mode=targetModelObjects['auditData']['mode'], record_path="response", json_path=['meta', 'paging'], last_run=settings['lastRun'])
+
     # If there are no events and last_run has not changed, then exit. Otherwise, continue on.
     if latest_run > settings['lastRun']:
 
@@ -36,6 +38,8 @@ def refresh_events(settings):
                          database_file=database_file,
                          uris=uris,
                          targetModelObjects=targetModelObjects)
+        
+        execute_process()
 
         # Update `setting.json` with lastRun Date (set by Get Events)
         Utils.update_configuration_settings(
@@ -43,8 +47,8 @@ def refresh_events(settings):
 
 
     else:
-        # TODO fill out
-        print("xx")
+        print(f'There were no audit events since the last run')
+        logging.error(f'There were no audit events since the last run')
         # TODO update Anaplan dashboard with the latest run and status
 
 
@@ -127,10 +131,6 @@ def refresh_sequence(settings, database_file, uris, targetModelObjects):
         # Upload data to Anaplan
         upload_records_to_anaplan(
             database_file=database_file, token_type="Bearer ", write_sample_files=write_sample_files, workspace_id=workspace_id, model_id=model_id, file_id=id, file_name=key['importFile'], table=key['table'], select_all_query=key['selectAllQuery'], add_unique_id=key['addUniqueId'], acronym=key['acronym'], tenant_name=settings['anaplanTenantName'], last_run=settings['lastRun'])
-
-    # TODO Run Process
-    # List Processes: https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/processes
-    # Run Proces
 
 
 
@@ -620,3 +620,59 @@ def fetch_ids(database_file, **kwargs):
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
         logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
         sys.exit(1)
+
+
+def execute_process():
+    # TODO Run Process
+    # List Processes: https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/processes
+
+    get_headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer ' + Globals.Auth.access_token
+    }
+
+    workspace_id = '8a868cd9837162ef0183cd4d7ba842c0'
+    model_id = '295D98F37F1B4682BE7A29035CBFB924'
+
+    # Get a list of Processes
+    uri = f'https://api.anaplan.com/2/0/workspaces/{workspace_id}/models/{model_id}/processes'
+    res = requests.get(uri, headers=get_headers)
+    process_id = json.loads(res.text)['processes'][0]['id']
+    res.raise_for_status()
+
+    # Run Process
+    uri = f'{uri}/{process_id}/tasks'
+    res = requests.post(uri, headers=get_headers, json={"localeName": "en_US"})
+    task_id = json.loads(res.text)['task']['taskId']
+    res.raise_for_status()
+
+
+    # Monitor Process
+    uri = f'{uri}/{task_id}'
+    state = 'NOT_STARTED'
+    while state != 'COMPLETE':
+        res = requests.get(uri, headers=get_headers)
+        res.raise_for_status()
+        task_id = json.loads(res.text)['task']['taskId']
+        state = json.loads(res.text)['task']['taskState']
+        time.sleep(1)
+    
+
+    print(f'Processing Complete')
+    logging.error(f'Processing Complete')
+
+    # except requests.exceptions.HTTPError as err:
+    #     print(
+    #         f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+    #     logging.error(
+    #         f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+    #     sys.exit(1)
+    # except requests.exceptions.RequestException as err:
+    #     print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+    #     logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+    #     sys.exit(1)
+    # except Exception as err:
+    #     print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+    #     logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+    #     sys.exit(1)

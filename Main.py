@@ -10,11 +10,10 @@ import AnaplanOauth
 import Globals
 import AnaplanOps
 
-# TODO add error handling for missing kwargs error
 # TODO add execution of a Process
 # TODO option to push all data from SQLite database to Anaplan
 # TODO option to load all data from audit regardless of last incremental run
-
+# TODO add timestamp as well as `BATCH_ID`
 
 
 def main():
