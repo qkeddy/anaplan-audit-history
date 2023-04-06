@@ -39,7 +39,8 @@ def refresh_events(settings):
                          uris=uris,
                          targetModelObjects=targetModelObjects)
         
-        execute_process()
+        execute_process(settings=settings,
+                        database_file=database_file)
 
         # Update `setting.json` with lastRun Date (set by Get Events)
         Utils.update_configuration_settings(
@@ -48,7 +49,7 @@ def refresh_events(settings):
 
     else:
         print(f'There were no audit events since the last run')
-        logging.error(f'There were no audit events since the last run')
+        logging.info(f'There were no audit events since the last run')
         # TODO update Anaplan dashboard with the latest run and status
 
 
@@ -622,57 +623,66 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
 
 
 # === Query and Load data to Anaplan  ===
-def execute_process():
-    # TODO Run Process
-    # List Processes: https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/processes
-
+def execute_process(settings, database_file):
     get_headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': 'Bearer ' + Globals.Auth.access_token
     }
 
-    workspace_id = '8a868cd9837162ef0183cd4d7ba842c0'
-    model_id = '295D98F37F1B4682BE7A29035CBFB924'
+    # Fetch Workspace, Model, and Process Ids
+    workspace_id = fetch_ids(
+        database_file=database_file, workspace=settings['targetAnaplanModel']['workspace'], type='workspaces')
+    model_id = fetch_ids(
+        database_file=database_file, model=settings['targetAnaplanModel']['model'], type='models', workspace_id=workspace_id)
+    process_id = fetch_ids(
+        database_file=database_file, action=settings['targetAnaplanModel']['process'], type='actions', workspace_id=workspace_id, model_id=model_id)
 
-    # Get a list of Processes
-    uri = f'https://api.anaplan.com/2/0/workspaces/{workspace_id}/models/{model_id}/processes'
-    res = requests.get(uri, headers=get_headers)
-    process_id = json.loads(res.text)['processes'][0]['id']
-    res.raise_for_status()
+    try:
+        # Construct URI
+        uri = f'{settings["uris"]["integrationApi"]}/workspaces/{workspace_id}/models/{model_id}/processes/{process_id}/tasks'
 
-    # Run Process
-    uri = f'{uri}/{process_id}/tasks'
-    res = requests.post(uri, headers=get_headers, json={"localeName": "en_US"})
-    task_id = json.loads(res.text)['task']['taskId']
-    res.raise_for_status()
+        # Run Process
+        res = requests.post(uri, headers=get_headers, json={"localeName": "en_US"})
 
-
-    # Monitor Process
-    uri = f'{uri}/{task_id}'
-    state = 'NOT_STARTED'
-    while state != 'COMPLETE':
-        res = requests.get(uri, headers=get_headers)
+        # Check for unfavorable status codes
         res.raise_for_status()
+
+        # Isolate task_id
         task_id = json.loads(res.text)['task']['taskId']
-        state = json.loads(res.text)['task']['taskState']
-        time.sleep(1)
-    
 
-    print(f'Processing Complete')
-    logging.error(f'Processing Complete')
 
-    # except requests.exceptions.HTTPError as err:
-    #     print(
-    #         f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-    #     logging.error(
-    #         f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-    #     sys.exit(1)
-    # except requests.exceptions.RequestException as err:
-    #     print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-    #     logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
-    #     sys.exit(1)
-    # except Exception as err:
-    #     print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-    #     logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
-    #     sys.exit(1)
+        # Monitor Process by looping until complete with a 1 second delay between each loop
+        uri = f'{uri}/{task_id}'
+        state = 'NOT_STARTED'
+        while state != 'COMPLETE':
+            # Fetch status
+            res = requests.get(uri, headers=get_headers)
+
+            # Check for unfavorable status codes
+            res.raise_for_status()
+
+            # Isolate task state
+            state = json.loads(res.text)['task']['taskState']
+
+            # Sleep for 1 second
+            print('Processing ...')
+            time.sleep(1)
+
+        print(f'Audit log refresh is complete')
+        logging.info(f'Audit log refresh is complete')
+
+    except requests.exceptions.HTTPError as err:
+        print(
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+        logging.error(
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+        sys.exit(1)
+    except requests.exceptions.RequestException as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+    except Exception as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)

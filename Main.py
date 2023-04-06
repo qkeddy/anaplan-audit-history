@@ -42,18 +42,18 @@ def main():
 	if register:
 		logger.info(
 			f'Registering the device with Client ID: {Globals.Auth.client_id}')
-		AnaplanOauth.get_device_id(uri=settings['get_device_id_uri'])
-		AnaplanOauth.get_tokens(uri=settings['get_tokens_uri'], database=token_db)
+		AnaplanOauth.get_device_id(uri=settings['uris']['deviceId'])
+		AnaplanOauth.get_tokens(uri=settings['uris']['tokens'], database=token_db)
 
 	else:
 		print('Skipping device registration and refreshing the access_token')
 		logger.info('Skipping device registration and refreshing the access_token')
 		AnaplanOauth.refresh_tokens(
-			uri=settings['get_tokens_uri'], database=token_db, delay=0)
+			uri=settings['uris']['tokens'], database=token_db, delay=0)
 
 	# Start background thread to refresh the `access_token`
 	refresh_token = AnaplanOauth.refresh_token_thread(
-		1, name="Refresh Token", delay=Globals.Auth.token_ttl, uri=settings['get_tokens_uri'], database=token_db)
+		1, name="Refresh Token", delay=Globals.Auth.token_ttl, uri=settings['uris']['tokens'], database=token_db)
 	refresh_token.start()
 
 	# Invoke functional Anaplan operations
