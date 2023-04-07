@@ -19,3 +19,9 @@ class Paths:
     scripts: str
     databases: str
     logs: str
+
+
+@dataclass
+class Timestamps:
+    gmt_epoch: str
+    local_time_stamp: str

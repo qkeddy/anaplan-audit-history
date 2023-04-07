@@ -4,13 +4,15 @@
 
 import sys
 import logging
+import datetime
+import pytz
+
 
 import Utils
 import AnaplanOauth
 import Globals
 import AnaplanOps
 
-# TODO add execution of a Process
 # TODO option to push all data from SQLite database to Anaplan
 # TODO option to load all data from audit regardless of last incremental run
 # TODO add timestamp as well as `BATCH_ID`
@@ -25,6 +27,11 @@ def main():
 
 	# Get configurations from `settings.json` file
 	settings = Utils.read_configuration_settings()
+
+	# Get and set current time stamp
+	ts = datetime.datetime.now(pytz.timezone("US/Eastern"))
+	Globals.Timestamps.local_time_stamp = ts.strftime("%d-%m-%Y %H:%M:%S %Z")
+	Globals.Timestamps.gmt_epoch = ts.strftime('%s')
 
 	# Get configurations from the CLI
 	args = Utils.read_cli_arguments()

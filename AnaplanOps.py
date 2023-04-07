@@ -21,16 +21,22 @@ logger = logging.getLogger(__name__)
 
 # ===  Fetch audit events from Anaplan. If there are no events then stop process ===
 def refresh_events(settings):
-    # Isolate values in the settings
+    # Set variables
     uris = settings['uris']
     targetModelObjects = settings['targetAnaplanModel']['targetModelObjects']
     database_file = f'{Globals.Paths.databases}/{settings["database"]}'
+
+    # If toggled on, drop events table
+    if targetModelObjects['auditData']['tableDrop']:
+        db.drop_table(database_file=database_file,
+                      table=targetModelObjects['auditData']['table'])
 
     # Get Events
     latest_run = get_incremental_audit_events(uri=uris['auditEvents'], token_type="AnaplanAuthToken ", database_file=database_file, database_table=targetModelObjects['auditData']['table'],
                                               add_unique_id=targetModelObjects['auditData']['addUniqueId'], mode=targetModelObjects['auditData']['mode'], record_path="response", json_path=['meta', 'paging'], last_run=settings['lastRun'])
 
     # If there are no events and last_run has not changed, then exit. Otherwise, continue on.
+    # latest_run = 0
     if latest_run > settings['lastRun']:
 
         # Execute the refresh audit data
@@ -50,7 +56,9 @@ def refresh_events(settings):
     else:
         print(f'There were no audit events since the last run')
         logging.info(f'There were no audit events since the last run')
-        # TODO update Anaplan dashboard with the latest run and status
+    
+    
+    # TODO Update Anaplan dashboard with the latest run and status
 
 
 # ===  If there are new events then refresh Anaplan object and upload the latest data to Anaplan ===
@@ -58,7 +66,7 @@ def refresh_sequence(settings, database_file, uris, targetModelObjects):
 
     # Drop tables
     for key in targetModelObjects.values():
-        if key['tableDrop']:
+        if key['tableDrop'] and key['acronym'] != 'AUDIT':
             db.drop_table(database_file=database_file, table=key['table'])
 
     # Load User Activity Codes
@@ -160,15 +168,16 @@ def get_incremental_audit_events(uri, token_type, database_file, database_table,
 
         # Create empty DataFrame with specific column names & types
         # If additional fields are required, then this will need to be updated.
-        df_initialize = pd.DataFrame({'index': pd.Series(dtype='int'), 'id': pd.Series(dtype='int'), 'eventTypeId': pd.Series(dtype='str'), 'userId': pd.Series(dtype='str'), 'tenantId': pd.Series(dtype='str'), 'objectId': pd.Series(dtype='str'), 'message': pd.Series(dtype='str'), 'success': pd.Series(dtype='bool'), 'errorNumber': pd.Series(dtype='str'), 'ipAddress': pd.Series(dtype='str'), 'userAgent': pd.Series(dtype='str'), 'sessionId': pd.Series(dtype='str'), 'hostName': pd.Series(dtype='str'), 'serviceVersion': pd.Series(dtype='str'), 'eventDate': pd.Series(dtype='int'), 'eventTimeZone': pd.Series(dtype='str'), 'createdDate': pd.Series(dtype='int'), 'createdTimeZone': pd.Series(dtype='str'), 'checksum': pd.Series(dtype='str'), 'objectTypeId': pd.Series(dtype='str'), 'objectTenantId': pd.Series(dtype='str'), 'additionalAttributes.workspaceId': pd.Series(dtype='str'), 'additionalAttributes.actionId': pd.Series(
+        df_initialize = pd.DataFrame({'id': pd.Series(dtype='int'), 'eventTypeId': pd.Series(dtype='str'), 'userId': pd.Series(dtype='str'), 'tenantId': pd.Series(dtype='str'), 'objectId': pd.Series(dtype='str'), 'message': pd.Series(dtype='str'), 'success': pd.Series(dtype='bool'), 'errorNumber': pd.Series(dtype='str'), 'ipAddress': pd.Series(dtype='str'), 'userAgent': pd.Series(dtype='str'), 'sessionId': pd.Series(dtype='str'), 'hostName': pd.Series(dtype='str'), 'serviceVersion': pd.Series(dtype='str'), 'eventDate': pd.Series(dtype='int'), 'eventTimeZone': pd.Series(dtype='str'), 'createdDate': pd.Series(dtype='int'), 'createdTimeZone': pd.Series(dtype='str'), 'checksum': pd.Series(dtype='str'), 'objectTypeId': pd.Series(dtype='str'), 'objectTenantId': pd.Series(dtype='str'), 'additionalAttributes.workspaceId': pd.Series(dtype='str'), 'additionalAttributes.actionId': pd.Series(
             dtype='str'), 'additionalAttributes.name': pd.Series(dtype='str'), 'additionalAttributes.type': pd.Series(dtype='str'), 'additionalAttributes.auth_id': pd.Series(dtype='str'), 'additionalAttributes.modelAccessLevel': pd.Series(dtype='str'), 'additionalAttributes.modelId': pd.Series(dtype='str'), 'additionalAttributes.modelRoleName': pd.Series(dtype='str'), 'additionalAttributes.modelRoleId': pd.Series(dtype='str'), 'additionalAttributes.active': pd.Series(dtype='str'), 'additionalAttributes.actionName': pd.Series(dtype='str'), 'additionalAttributes.nux_visible': pd.Series(dtype='str'), 'additionalAttributes.roleId': pd.Series(dtype='str'), 'additionalAttributes.roleName': pd.Series(dtype='str'), 'additionalAttributes.objectTypeId': pd.Series(dtype='str'), 'additionalAttributes.objectTenantId': pd.Series(dtype='str'), 'additionalAttributes.objectId': pd.Series(dtype='str')})
 
-        # Offset the last_run date by 1 millisecond
-        if last_run != 0:
-            last_run = last_run + 1
 
-        # Set request with `last_run` value
-        res = requests.post(uri, headers=get_headers, json={"from": last_run})
+
+        # Set request with `last_run` value. If last_run is non-zero then increment by 1 millisecond
+        if last_run == 0:
+            res = requests.post(uri, headers=get_headers, json={"from": last_run})
+        else:
+            res = requests.post(uri, headers=get_headers, json={"from": last_run+1})
 
         # Check for unfavorable status codes
         res.raise_for_status()
@@ -227,7 +236,7 @@ def get_incremental_audit_events(uri, token_type, database_file, database_table,
         print(
             f'{total_size} {database_table} records received with {count} API call(s)')
 
-        # Return last run date. If there were no records then simply return the prior last run date.
+        # Return last audit event date. If there were no records then simply return the prior last run date.
         if df.shape[0] == 0:
             return last_run
         else:
@@ -493,7 +502,8 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
         sql = sql_file.read()
 
         # Update sql with tenant name
-        sql = sql.replace('{{tenant_name}}', kwargs['tenant_name'])
+        sql = sql.replace('{{tenant_name}}',
+                          kwargs['tenant_name']).replace('{{time_stamp}}', Globals.Timestamps.gmt_epoch)
 
         # Update sql with the last run date
         last_run = kwargs['last_run']
@@ -622,7 +632,7 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
         sys.exit(1)
 
 
-# === Query and Load data to Anaplan  ===
+# === Execute Process  ===
 def execute_process(settings, database_file):
     get_headers = {
         'Content-Type': 'application/json',
@@ -671,6 +681,71 @@ def execute_process(settings, database_file):
 
         print(f'Audit log refresh is complete')
         logging.info(f'Audit log refresh is complete')
+
+    except requests.exceptions.HTTPError as err:
+        print(
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+        logging.error(
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+        sys.exit(1)
+    except requests.exceptions.RequestException as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+    except Exception as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+
+
+# === Upload Time Stamp  ===
+def upload_time_stamp(settings, database_file):
+    get_headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer ' + Globals.Auth.access_token
+    }
+
+    # Fetch Workspace and Model Ids
+    workspace_id = fetch_ids(
+        database_file=database_file, workspace=settings['targetAnaplanModel']['workspace'], type='workspaces')
+    model_id = fetch_ids(
+        database_file=database_file, model=settings['targetAnaplanModel']['model'], type='models', workspace_id=workspace_id)
+    
+    # Construct base URI
+    uri = f'{settings["uris"]["integrationApi"]}/workspaces/{workspace_id}/models/{model_id}/lists'
+
+    # Fetch target list ID
+    try:
+        # Get Module Lists
+        res = requests.get(uri, headers=get_headers)
+
+        # Check for unfavorable status codes
+        res.raise_for_status()
+
+        # Get ID of target list 
+        list_id = 0
+        for key in json.loads(res.text)['lists']:
+            if key['name'] == settings['targetAnaplanModel']['batchIdList']:
+                list_id = key['id']
+
+    except Exception as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+
+
+    try:
+        # Construct URI
+        uri = f'{settings["uris"]["integrationApi"]}/workspaces/{workspace_id}/models/{model_id}/lists/{list_id}/items?action=add'
+
+        # Run Process
+        res = requests.post(uri, headers=get_headers,
+                            json={"items": [{"name": Globals.Timestamps.gmt_epoch, "code": Globals.Timestamps.gmt_epoch}]})
+
+        # Check for unfavorable status codes
+        res.raise_for_status()
+
 
     except requests.exceptions.HTTPError as err:
         print(

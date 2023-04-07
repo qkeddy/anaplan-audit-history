@@ -16,12 +16,17 @@
         "processes": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/processes/",
         "files": "https://api.anaplan.com/2/0/workspaces/{{workspace_id}}/models/{{model_id}}/files/",
         "cloudWorks": "https://api.cloudworks.anaplan.com/2/0/integrations",
-        "integrationApi": "https://api.anaplan.com/2/0"
+        "oauthService": "https://us1a.app.anaplan.com/oauth",
+        "integrationApi": "https://api.anaplan.com/2/0",
+        "auditApi": "https://audit.anaplan.com/audit/api/1",
+        "scimApi": "https://api.anaplan.com/scim/1/0/v2",
+        "cloudworksApi": "https://api.cloudworks.anaplan.com/2/0"
     },
     "targetAnaplanModel": {
         "workspace": "Workspace #1",
         "model": "Audit Report",
         "process": "Update Anaplan Audit Environment",
+        "batchIdList": "BATCH_ID",
         "targetModelObjects": {
             "activityCodesData": {
                 "importFile": "ACTIVITY_CODES.csv",
@@ -85,7 +90,7 @@
                 "table": "events",
                 "selectAllQuery": false,
                 "mode": "append",
-                "tableDrop": false,
+                "tableDrop": true,
                 "addUniqueId": false
             }
         }
