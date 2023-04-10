@@ -45,6 +45,10 @@ def refresh_events(settings):
                          uris=uris,
                          targetModelObjects=targetModelObjects)
         
+        # Upload the latest time stamp to the `Refresh Log`
+        upload_time_stamp(settings=settings, database_file=database_file)
+
+        
         execute_process(settings=settings,
                         database_file=database_file)
 
@@ -54,11 +58,12 @@ def refresh_events(settings):
 
 
     else:
+        # Upload the latest time stamp to the `Refresh Log`
+        upload_time_stamp(settings=settings, database_file=database_file)
+
         print(f'There were no audit events since the last run')
         logging.info(f'There were no audit events since the last run')
     
-    # Upload the latest time stamp to the `Refresh Log`
-    upload_time_stamp(settings=settings, database_file=database_file)
 
 
 # ===  If there are new events then refresh Anaplan object and upload the latest data to Anaplan ===
@@ -524,6 +529,10 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
         cursor.execute(rc_sql)
         record_count = cursor.fetchone()[0]
 
+        # If fetching audit records, then capture record count
+        if not kwargs["select_all_query"]:
+            Globals.Counts.audit_records = record_count
+
         # Get the number of chunks and set the Anaplan File Chunk Count
         chunk_count = math.ceil(record_count / chunk_size)
 
@@ -715,14 +724,17 @@ def upload_time_stamp(settings, database_file):
     # Construct base URI
     base_uri = f'{settings["uris"]["integrationApi"]}/workspaces/{workspace_id}/models/{model_id}'
     
-    # Get ID of target Line Item
+    # Get ID of target Line Items
     uri = f'{base_uri}/lineItems'
     res = anaplan_api(uri, 'GET')
-    line_item_id = 0
+    line_item_id1, line_item_id_2 = 0, 0
     for key in json.loads(res.text)['items']:
-        if key['name'] == settings['targetAnaplanModel']['refreshLogLineItem']:
-            line_item_id = key['id']
+        if key['name'] == settings['targetAnaplanModel']['refreshLogLineItems'][0]:
+            line_item_id_1 = key['id']
             module_id = key['moduleId']
+        if key['name'] == settings['targetAnaplanModel']['refreshLogLineItems'][1]:
+            line_item_id_2 = key['id']
+
 
     # Get ID of target List
     uri = f'{base_uri}/lists'
@@ -739,8 +751,9 @@ def upload_time_stamp(settings, database_file):
 
     # Inject data to the module
     uri = f'{base_uri}/modules/{module_id}/data'
-    res = anaplan_api(uri, 'POST', body=[{"lineItemId": line_item_id, "dimensions": [
-                      {"dimensionId": list_id, "itemName": Globals.Timestamps.gmt_epoch}], "value": Globals.Timestamps.local_time_stamp}])
+    res = anaplan_api(uri, 'POST', body=[{"lineItemId": line_item_id_1, "dimensions": [
+                      {"dimensionId": list_id, "itemName": Globals.Timestamps.gmt_epoch}], "value": Globals.Timestamps.local_time_stamp}, {"lineItemId": line_item_id_2, "dimensions": [
+                          {"dimensionId": list_id, "itemName": Globals.Timestamps.gmt_epoch}], "value": Globals.Counts.audit_records}])
 
 
 

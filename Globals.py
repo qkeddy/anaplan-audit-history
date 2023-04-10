@@ -25,3 +25,8 @@ class Paths:
 class Timestamps:
     gmt_epoch: str
     local_time_stamp: str
+
+
+@dataclass
+class Counts:
+    audit_records: int = 0 # Set default ot 0 records

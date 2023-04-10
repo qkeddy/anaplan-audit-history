@@ -27,7 +27,10 @@
         "model": "Audit Report",
         "process": "Update Anaplan Audit Environment",
         "batchIdList": "BATCH_ID",
-        "refreshLogLineItem": "Time Stamp",
+        "refreshLogLineItems": [
+            "Time Stamp",
+            "Audit Records Loaded"
+        ],
         "targetModelObjects": {
             "activityCodesData": {
                 "importFile": "ACTIVITY_CODES.csv",
@@ -91,7 +94,7 @@
                 "table": "events",
                 "selectAllQuery": false,
                 "mode": "append",
-                "tableDrop": true,
+                "tableDrop": false,
                 "addUniqueId": false
             }
         }
