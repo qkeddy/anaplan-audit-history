@@ -57,8 +57,8 @@ def refresh_events(settings):
         print(f'There were no audit events since the last run')
         logging.info(f'There were no audit events since the last run')
     
-    
-    # TODO Update Anaplan dashboard with the latest run and status
+    # Upload the latest time stamp to the `Refresh Log`
+    upload_time_stamp(settings=settings, database_file=database_file)
 
 
 # ===  If there are new events then refresh Anaplan object and upload the latest data to Anaplan ===
@@ -713,39 +713,63 @@ def upload_time_stamp(settings, database_file):
         database_file=database_file, model=settings['targetAnaplanModel']['model'], type='models', workspace_id=workspace_id)
     
     # Construct base URI
-    uri = f'{settings["uris"]["integrationApi"]}/workspaces/{workspace_id}/models/{model_id}/lists'
+    base_uri = f'{settings["uris"]["integrationApi"]}/workspaces/{workspace_id}/models/{model_id}'
+    
+    # Get ID of target Line Item
+    uri = f'{base_uri}/lineItems'
+    res = anaplan_api(uri, 'GET')
+    line_item_id = 0
+    for key in json.loads(res.text)['items']:
+        if key['name'] == settings['targetAnaplanModel']['refreshLogLineItem']:
+            line_item_id = key['id']
+            module_id = key['moduleId']
 
-    # Fetch target list ID
+    # Get ID of target List
+    uri = f'{base_uri}/lists'
+    res = anaplan_api(uri, 'GET')
+    list_id = 0
+    for key in json.loads(res.text)['lists']:
+        if key['name'] == settings['targetAnaplanModel']['batchIdList']:
+            list_id = key['id']
+
+    # Add the new ID (epoch time) to the `LOAD_ID` list
+    uri = f'{base_uri}/lists/{list_id}/items?action=add'
+    res = anaplan_api(uri, 'POST', body={"items": [
+                      {"name": Globals.Timestamps.gmt_epoch, "code": Globals.Timestamps.gmt_epoch}]})
+
+    # Inject data to the module
+    uri = f'{base_uri}/modules/{module_id}/data'
+    res = anaplan_api(uri, 'POST', body=[{"lineItemId": line_item_id, "dimensions": [
+                      {"dimensionId": list_id, "itemName": Globals.Timestamps.gmt_epoch}], "value": Globals.Timestamps.local_time_stamp}])
+
+
+
+def anaplan_api(uri, verb, body={}):
+    get_headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': 'Bearer ' + Globals.Auth.access_token
+    }
+
+    # Select operation based upon the the verb
     try:
-        # Get Module Lists
-        res = requests.get(uri, headers=get_headers)
+        match verb:
+            case 'GET':
+                res = requests.get(uri, headers=get_headers)
+            case 'POST':
+                res = requests.post(uri, headers=get_headers, json=body)
+            case 'PUT':
+                res = requests.put(uri, headers=get_headers)
+            case 'DELETE':
+                res = requests.delete(uri, headers=get_headers)
+            case 'PATCH':
+                res = requests.patch(uri, headers=get_headers)
 
-        # Check for unfavorable status codes
+        # Override linting
+        # pyright: reportUnboundVariable=false
         res.raise_for_status()
 
-        # Get ID of target list 
-        list_id = 0
-        for key in json.loads(res.text)['lists']:
-            if key['name'] == settings['targetAnaplanModel']['batchIdList']:
-                list_id = key['id']
-
-    except Exception as err:
-        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        sys.exit(1)
-
-
-    try:
-        # Construct URI
-        uri = f'{settings["uris"]["integrationApi"]}/workspaces/{workspace_id}/models/{model_id}/lists/{list_id}/items?action=add'
-
-        # Run Process
-        res = requests.post(uri, headers=get_headers,
-                            json={"items": [{"name": Globals.Timestamps.gmt_epoch, "code": Globals.Timestamps.gmt_epoch}]})
-
-        # Check for unfavorable status codes
-        res.raise_for_status()
-
+        return res
 
     except requests.exceptions.HTTPError as err:
         print(

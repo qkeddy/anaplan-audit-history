@@ -15,7 +15,7 @@ import AnaplanOps
 
 # TODO option to push all data from SQLite database to Anaplan
 # TODO option to load all data from audit regardless of last incremental run
-# TODO add timestamp as well as `BATCH_ID`
+# TODO notify when there is a warning in the process
 
 
 def main():
