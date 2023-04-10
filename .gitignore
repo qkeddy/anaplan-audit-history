@@ -136,3 +136,4 @@ workspaces.json
 *.db3
 model_history.csv
 samples/
+.DS_Store
