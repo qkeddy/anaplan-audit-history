@@ -32,8 +32,9 @@ def refresh_events(settings):
                       table=targetModelObjects['auditData']['table'])
 
     # Get Events
-    latest_run = get_incremental_audit_events(uri=uris['auditEvents'], token_type="AnaplanAuthToken ", database_file=database_file, database_table=targetModelObjects['auditData']['table'],
+    latest_run = get_incremental_audit_events(base_uri=uris['auditApi'], database_file=database_file, database_table=targetModelObjects['auditData']['table'],
                                               add_unique_id=targetModelObjects['auditData']['addUniqueId'], mode=targetModelObjects['auditData']['mode'], record_path="response", json_path=['meta', 'paging'], last_run=settings['lastRun'])
+    
 
     # If there are no events and last_run has not changed, then exit. Otherwise, continue on.
     # latest_run = 0
@@ -65,6 +66,87 @@ def refresh_events(settings):
         logging.info(f'There were no audit events since the last run')
     
 
+# ===  Get Anaplan Audit Events ===
+def get_incremental_audit_events(base_uri, database_file, database_table, mode, record_path, add_unique_id, json_path, last_run):
+    uri = f'{base_uri}/events/search'
+    res = None
+    count = 1
+
+    try:
+        # Set request with `last_run` value. If last_run is non-zero then increment by 1 millisecond
+        if last_run > 0:
+            last_run = last_run + 1
+
+        # Initial endpoint query
+        print(f'uri: {uri}   last run: {last_run}')
+
+        # Retrieve first page of audit events
+        res = anaplan_api(uri=uri, verb='POST', body={"from": last_run}, token_type="AnaplanAuthToken ").json()
+
+        # Add response to data frame and normalize
+        df = pd.json_normalize(res, record_path)
+
+        # Append to the initialized Data Frame
+        df = pd.concat([initialize_data_frame(), df], ignore_index=True)
+
+        # Fetch the total number of audit records 
+        total_size = res[json_path[0]][json_path[1]]['totalSize']
+
+        # Loop and get audit records until `nextUrl` is not found
+        while True:
+            try:
+                # Find key in json path
+                next_uri = res[json_path[0]][json_path[1]]['nextUrl']
+
+                # Get the next request
+                print(next_uri)
+
+                # Retrieve the next page of audit events
+                res = anaplan_api(uri=next_uri, verb='POST', body={"from": last_run}, token_type="AnaplanAuthToken ").json()
+
+                # Create a temporary data from to hold the incremental records 
+                df_incremental = pd.json_normalize(res, record_path)
+
+                # Append to the incremental records to the existing Data Frame
+                df = pd.concat([df, df_incremental], ignore_index=True)
+                count += 1
+
+            # When `nextUrl` is not found, break the While loop    
+            except KeyError:
+                # Stop looping when key cannot be found
+                break
+
+        # Once all audit records are fetched update the SQLite table
+        db.update_table(database_file=database_file, add_unique_id=add_unique_id,
+                        table=database_table, df=df, mode=mode)
+
+        logger.info(
+            f'{total_size} {database_table} records received with {count} API call(s)')
+        print(
+            f'{total_size} {database_table} records received with {count} API call(s)')
+
+        # Return last audit event date. If there were no records then simply return the prior last run date.
+        if df.shape[0] == 0:
+            return last_run
+        else:
+            return df['eventDate'].tolist()[-1]
+
+    except Exception as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+
+
+# === Initialize the Data Fram ===
+def initialize_data_frame():
+    # Create empty DataFrame with specific column names & types
+    # If additional fields are required, then this will need to be updated.
+    df_initialize = pd.DataFrame({'id': pd.Series(dtype='int'), 'eventTypeId': pd.Series(dtype='str'), 'userId': pd.Series(dtype='str'), 'tenantId': pd.Series(dtype='str'), 'objectId': pd.Series(dtype='str'), 'message': pd.Series(dtype='str'), 'success': pd.Series(dtype='bool'), 'errorNumber': pd.Series(dtype='str'), 'ipAddress': pd.Series(dtype='str'), 'userAgent': pd.Series(dtype='str'), 'sessionId': pd.Series(dtype='str'), 'hostName': pd.Series(dtype='str'), 'serviceVersion': pd.Series(dtype='str'), 'eventDate': pd.Series(dtype='int'), 'eventTimeZone': pd.Series(dtype='str'), 'createdDate': pd.Series(dtype='int'), 'createdTimeZone': pd.Series(dtype='str'), 'checksum': pd.Series(dtype='str'), 'objectTypeId': pd.Series(dtype='str'), 'objectTenantId': pd.Series(dtype='str'), 'additionalAttributes.workspaceId': pd.Series(dtype='str'), 'additionalAttributes.actionId': pd.Series(
+        dtype='str'), 'additionalAttributes.name': pd.Series(dtype='str'), 'additionalAttributes.type': pd.Series(dtype='str'), 'additionalAttributes.auth_id': pd.Series(dtype='str'), 'additionalAttributes.modelAccessLevel': pd.Series(dtype='str'), 'additionalAttributes.modelId': pd.Series(dtype='str'), 'additionalAttributes.modelRoleName': pd.Series(dtype='str'), 'additionalAttributes.modelRoleId': pd.Series(dtype='str'), 'additionalAttributes.active': pd.Series(dtype='str'), 'additionalAttributes.actionName': pd.Series(dtype='str'), 'additionalAttributes.nux_visible': pd.Series(dtype='str'), 'additionalAttributes.roleId': pd.Series(dtype='str'), 'additionalAttributes.roleName': pd.Series(dtype='str'), 'additionalAttributes.objectTypeId': pd.Series(dtype='str'), 'additionalAttributes.objectTenantId': pd.Series(dtype='str'), 'additionalAttributes.objectId': pd.Series(dtype='str')})
+    
+    return df_initialize
+
+
 # ===  If there are new events then refresh Anaplan object and upload the latest data to Anaplan ===
 def refresh_sequence(settings, database_file, uris, targetModelObjects):
 
@@ -78,43 +160,43 @@ def refresh_sequence(settings, database_file, uris, targetModelObjects):
         database_file=database_file, table=targetModelObjects['activityCodesData']['table'])
 
     # Get Users
-    get_anaplan_paged_data(uri=uris['users'], token_type="Bearer ", database_file=database_file,
-                                database_table=targetModelObjects['usersData']['table'], add_unique_id=targetModelObjects['usersData']['addUniqueId'], record_path="Resources", page_size_key=['itemsPerPage'], page_index_key=['startIndex'], total_results_key=['totalResults'])
+    get_anaplan_paged_data(uri=f'{uris["scimApi"]}/Users', database_file=database_file,
+                           database_table=targetModelObjects['usersData']['table'], add_unique_id=targetModelObjects['usersData']['addUniqueId'], record_path="Resources", page_size_key=['itemsPerPage'], page_index_key=['startIndex'], total_results_key=['totalResults'])
 
     # Get Workspaces
-    workspace_ids = get_anaplan_paged_data(uri=uris['workspaces'], token_type="Bearer ", database_file=database_file,
-                                                database_table=targetModelObjects['workspacesData']['table'], add_unique_id=targetModelObjects['workspacesData']['addUniqueId'], record_path="workspaces", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], return_id=True)
+    workspace_ids = get_anaplan_paged_data(uri=f'{uris["integrationApi"]}/workspaces?tenantDetails=true', database_file=database_file,
+                                           database_table=targetModelObjects['workspacesData']['table'], add_unique_id=targetModelObjects['workspacesData']['addUniqueId'], record_path="workspaces", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], return_id=True)
 
     # Get Models in all Workspace
     for ws_id in workspace_ids:
-        model_ids = get_anaplan_paged_data(uri=uris['models'].replace('{{workspace_id}}', ws_id), token_type="Bearer ", database_file=database_file,
-                                                database_table=targetModelObjects['modelsData']['table'], add_unique_id=targetModelObjects['modelsData']['addUniqueId'], record_path="models", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], return_id=True)
+        model_ids = get_anaplan_paged_data(uri=f'{uris["integrationApi"]}/workspaces/{ws_id}/models?modelDetails=true', database_file=database_file,
+                                           database_table=targetModelObjects['modelsData']['table'], add_unique_id=targetModelObjects['modelsData']['addUniqueId'], record_path="models", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], return_id=True)
 
         # Loop through each Model to get details
         for mod_id in model_ids:
-                # Get Import Actions in all Models in all Workspaces
-                get_anaplan_paged_data(uri=uris['imports'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-                                            database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="imports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+            # Get Import Actions in all Models in all Workspaces
+            get_anaplan_paged_data(uri=f'{uris["integrationApi"]}/workspaces/{ws_id}/models/{mod_id}/imports', database_file=database_file,
+                                   database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="imports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 
-                # Get Export Actions in all Models in all Workspaces
-                get_anaplan_paged_data(uri=uris['exports'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-                                            database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="exports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+            # Get Export Actions in all Models in all Workspaces
+            get_anaplan_paged_data(uri=f'{uris["integrationApi"]}/workspaces/{ws_id}/models/{mod_id}/exports', database_file=database_file,
+                                   database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="exports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 
-                # Get Actions in all Models in all Workspaces
-                get_anaplan_paged_data(uri=uris['actions'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-                                        database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="actions", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+            # Get Actions in all Models in all Workspaces
+            get_anaplan_paged_data(uri=f'{uris["integrationApi"]}/workspaces/{ws_id}/models/{mod_id}/actions', database_file=database_file,
+                                   database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="actions", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 
-                # Get Processes in all Models in all Workspaces
-                get_anaplan_paged_data(uri=uris['processes'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-                                        database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="processes", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+            # Get Processes in all Models in all Workspaces
+            get_anaplan_paged_data(uri=f'{uris["integrationApi"]}/workspaces/{ws_id}/models/{mod_id}/processes', database_file=database_file,
+                                   database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="processes", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 
-                # Get Files in all Models in all Workspaces
-                get_anaplan_paged_data(uri=uris['files'].replace('{{workspace_id}}', ws_id).replace('{{model_id}}', mod_id), token_type="Bearer ", database_file=database_file,
-                                        database_table=targetModelObjects['filesData']['table'], add_unique_id=targetModelObjects['filesData']['addUniqueId'], record_path="files", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
+            # Get Files in all Models in all Workspaces
+            get_anaplan_paged_data(uri=f'{uris["integrationApi"]}/workspaces/{ws_id}/models/{mod_id}/files', database_file=database_file,
+                                   database_table=targetModelObjects['filesData']['table'], add_unique_id=targetModelObjects['filesData']['addUniqueId'], record_path="files", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)
 
     # Get CloudWorks Integrations
-    get_anaplan_paged_data(uri=uris['cloudWorks'], token_type="AnaplanAuthToken ", database_file=database_file,
-                                database_table=targetModelObjects['cloudWorksData']['table'], add_unique_id=targetModelObjects['cloudWorksData']['addUniqueId'], record_path="integrations", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'])
+    get_anaplan_paged_data(uri=f'{uris["cloudworksApi"]}/integrations', database_file=database_file,
+                           database_table=targetModelObjects['cloudWorksData']['table'], add_unique_id=targetModelObjects['cloudWorksData']['addUniqueId'], record_path="integrations", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'])
 
     # Fetch ids for target Workspace and Model from the SQLite database
     workspace_id = fetch_ids(
@@ -130,153 +212,39 @@ def refresh_sequence(settings, database_file, uris, targetModelObjects):
 
         # If a target file is not found in Anaplan, then toggle the creation of sample files
         if id == -1:
-                logger.warning(print(
-                    "One or more files not found in Anaplan. Creating a sample set of files for upload into Anaplan."))
-                print("One or more files not found in Anaplan. Creating a sample set of files for upload into Anaplan.")
-                write_sample_files = True
+            logger.warning(print(
+                "One or more files not found in Anaplan. Creating a sample set of files for upload into Anaplan."))
+            print(
+                "One or more files not found in Anaplan. Creating a sample set of files for upload into Anaplan.")
+            write_sample_files = True
         else:
             if settings["writeSampleFilesOverride"]:
                 write_sample_files = True
                 logger.info(
                     "Create Sample files is toggled on. Files will be created in the `/samples directory.")
-                print("Create Sample files is toggled on. Files will be created in the `/samples directory.")
+                print(
+                    "Create Sample files is toggled on. Files will be created in the `/samples directory.")
 
         # Upload data to Anaplan
-        upload_records_to_anaplan(
-            database_file=database_file, token_type="Bearer ", write_sample_files=write_sample_files, workspace_id=workspace_id, model_id=model_id, file_id=id, file_name=key['importFile'], table=key['table'], select_all_query=key['selectAllQuery'], add_unique_id=key['addUniqueId'], acronym=key['acronym'], tenant_name=settings['anaplanTenantName'], last_run=settings['lastRun'])
+        upload_records_to_anaplan(base_uri=uris['integrationApi'],
+                                  database_file=database_file, write_sample_files=write_sample_files, workspace_id=workspace_id, model_id=model_id, file_id=id, file_name=key['importFile'], table=key['table'], select_all_query=key['selectAllQuery'], add_unique_id=key['addUniqueId'], acronym=key['acronym'], tenant_name=settings['anaplanTenantName'], last_run=settings['lastRun'])
 
 
 # ===  Load user activity codes from file  ===
 def get_usr_activity_codes(database_file, table):
     try:
         df = pd.read_csv(f'{Globals.Paths.scripts}/activity_events.csv')
-        db.update_table(database_file=database_file, table=table, df=df, mode='replace')
+        db.update_table(database_file=database_file,
+                        table=table, df=df, mode='replace')
     except Exception as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
         logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
         sys.exit(1)
 
 
-# ===  Get Anaplan Audit Events ===
-def get_incremental_audit_events(uri, token_type, database_file, database_table, mode, record_path, add_unique_id, json_path, last_run):
-    get_headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': token_type + Globals.Auth.access_token
-    }
-    res = None
-    count = 1
-    try:
-        # Initial endpoint query
-        print(uri)
-
-        # Create empty DataFrame with specific column names & types
-        # If additional fields are required, then this will need to be updated.
-        df_initialize = pd.DataFrame({'id': pd.Series(dtype='int'), 'eventTypeId': pd.Series(dtype='str'), 'userId': pd.Series(dtype='str'), 'tenantId': pd.Series(dtype='str'), 'objectId': pd.Series(dtype='str'), 'message': pd.Series(dtype='str'), 'success': pd.Series(dtype='bool'), 'errorNumber': pd.Series(dtype='str'), 'ipAddress': pd.Series(dtype='str'), 'userAgent': pd.Series(dtype='str'), 'sessionId': pd.Series(dtype='str'), 'hostName': pd.Series(dtype='str'), 'serviceVersion': pd.Series(dtype='str'), 'eventDate': pd.Series(dtype='int'), 'eventTimeZone': pd.Series(dtype='str'), 'createdDate': pd.Series(dtype='int'), 'createdTimeZone': pd.Series(dtype='str'), 'checksum': pd.Series(dtype='str'), 'objectTypeId': pd.Series(dtype='str'), 'objectTenantId': pd.Series(dtype='str'), 'additionalAttributes.workspaceId': pd.Series(dtype='str'), 'additionalAttributes.actionId': pd.Series(
-            dtype='str'), 'additionalAttributes.name': pd.Series(dtype='str'), 'additionalAttributes.type': pd.Series(dtype='str'), 'additionalAttributes.auth_id': pd.Series(dtype='str'), 'additionalAttributes.modelAccessLevel': pd.Series(dtype='str'), 'additionalAttributes.modelId': pd.Series(dtype='str'), 'additionalAttributes.modelRoleName': pd.Series(dtype='str'), 'additionalAttributes.modelRoleId': pd.Series(dtype='str'), 'additionalAttributes.active': pd.Series(dtype='str'), 'additionalAttributes.actionName': pd.Series(dtype='str'), 'additionalAttributes.nux_visible': pd.Series(dtype='str'), 'additionalAttributes.roleId': pd.Series(dtype='str'), 'additionalAttributes.roleName': pd.Series(dtype='str'), 'additionalAttributes.objectTypeId': pd.Series(dtype='str'), 'additionalAttributes.objectTenantId': pd.Series(dtype='str'), 'additionalAttributes.objectId': pd.Series(dtype='str')})
-
-
-
-        # Set request with `last_run` value. If last_run is non-zero then increment by 1 millisecond
-        if last_run == 0:
-            res = requests.post(uri, headers=get_headers, json={"from": 0})
-        else:
-            last_run = last_run + 1
-            res = requests.post(uri, headers=get_headers, json={"from": last_run})
-
-        # Check for unfavorable status codes
-        res.raise_for_status()
-
-        # Convert response to JSON and then to a data frame
-        res = res.json()
-        df = pd.json_normalize(res, record_path)
-
-        # # Append to the initialized Data Frame
-        df = pd.concat([df_initialize, df], ignore_index=True)
-
-        total_size = res[json_path[0]][json_path[1]]['totalSize']
-        while True:
-            try:
-                # Find key in json path
-                next_uri = res[json_path[0]][json_path[1]]['nextUrl']
-                # Get the next request
-                print(next_uri)
-                res = requests.post(
-                    next_uri, headers=get_headers, json={"from": last_run})
-                # Check for unfavorable status codes
-                res.raise_for_status()
-                # Convert response to JSON and then to a data frame
-                res = res.json()
-                df_incremental = pd.json_normalize(res, record_path)
-                # Append to the existing Data Frame
-                df = pd.concat([df, df_incremental], ignore_index=True)
-                count += 1
-            except KeyError:
-                # Stop looping when key cannot be found
-                break
-            except AttributeError:
-                break
-            except requests.exceptions.HTTPError as err:
-                print(
-                    f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-                logging.error(
-                    f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-                sys.exit(1)
-            except requests.exceptions.RequestException as err:
-                print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-                logging.error(
-                    f'{err} in function "{sys._getframe().f_code.co_name}"')
-                sys.exit(1)
-            except Exception as err:
-                print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-                logging.error(
-                    f'{err} in function "{sys._getframe().f_code.co_name}"')
-                sys.exit(1)
-
-        db.update_table(database_file=database_file, add_unique_id=add_unique_id,
-                        table=database_table, df=df, mode=mode)
-
-        logger.info(
-            f'{total_size} {database_table} records received with {count} API call(s)')
-        print(
-            f'{total_size} {database_table} records received with {count} API call(s)')
-
-        # Return last audit event date. If there were no records then simply return the prior last run date.
-        if df.shape[0] == 0:
-            return last_run
-        else:
-            return df['eventDate'].tolist()[-1]
-
-    except KeyError:
-        # Notification when no data is available for a particular API call
-        logger.info(
-            f'API call successful, but no {record_path} are available in the Workspace/Model combination. Alternatively, please check the {record_path} KeyPath.')
-        print(
-            f'API call successful, but no {record_path} are available in the Workspace/Model combination. Alternatively, please check the {record_path} KeyPath.')
-
-    except requests.exceptions.HTTPError as err:
-        print(
-            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-        logging.error(
-            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-        sys.exit(1)
-    except requests.exceptions.RequestException as err:
-        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        sys.exit(1)
-    except Exception as err:
-        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        sys.exit(1)
-
-
 # ===  Get Anaplan Paged Data  ===
-def get_anaplan_paged_data(uri, token_type, database_file, database_table, add_unique_id, record_path, page_size_key, page_index_key, total_results_key, workspace_id=None, model_id=None, return_id=False):
-    get_headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': token_type + Globals.Auth.access_token
-    }
+def get_anaplan_paged_data(uri, database_file, database_table, add_unique_id, record_path, page_size_key, page_index_key, total_results_key, workspace_id=None, model_id=None, return_id=False):
+    
     res = None
     count = 1
 
@@ -284,13 +252,11 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, add_u
         # Initial endpoint query
         logger.info(f'API Endpoint: {uri}')
         print(f'API Endpoint: {uri}')
-        res = requests.get(uri, headers=get_headers)
 
-        # Check for unfavorable status codes
-        res.raise_for_status()
-
-        # Convert response to JSON and then to a data frame
-        res = res.json()
+        # Retrieve first page
+        res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ").json()
+    
+        # Add response to data frame and normalize
         df = pd.json_normalize(res, record_path)
 
         # Initialize paging variables
@@ -312,22 +278,21 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, add_u
                 page_index = res[page_index_key[0]][page_index_key[1]][page_index_key[2]]
                 total_results = res[total_results_key[0]][total_results_key[1]][total_results_key[2]]
 
+        # Loop and get records while less than total results of the query
         while page_index + page_size < total_results:
             try: 
                 # Get next page
                 next_uri = f'{uri}&{page_index_key[depth-1].lower()}={page_index + page_size}'
                 logger.info(f'API Endpoint: {next_uri}')
                 print(f'API Endpoint: {next_uri}')
-                res = requests.get(next_uri, headers=get_headers)
 
-                # Check for unfavorable status codes
-                res.raise_for_status()
+                # res = requests.get(next_uri, headers=get_headers)
+                res = anaplan_api(uri=next_uri, verb="GET", token_type="Bearer ").json()
 
-                # Convert response to JSON and then to a data frame
-                res = res.json()
+                # Create a temporary data from to hold the incremental records
                 df_incremental = pd.json_normalize(res, record_path)
 
-                # Append to the existing Data Frame
+                # Append to the incremental records to the existing Data Frame
                 df = pd.concat([df, df_incremental], ignore_index=True)
                 count += 1
 
@@ -339,21 +304,6 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, add_u
             except KeyError | AttributeError as err:
                 print(err)
                 break
-            except requests.exceptions.HTTPError as err:
-                print(
-                    f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-                logging.error(
-                    f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-                sys.exit(1)
-            except requests.exceptions.RequestException as err:
-                print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-                logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
-                sys.exit(1)
-            except Exception as err:
-                print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-                logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
-                sys.exit(1)
-
 
         # Transform Data Frames columns before updating SQLite
         match database_table:
@@ -394,16 +344,6 @@ def get_anaplan_paged_data(uri, token_type, database_file, database_table, add_u
             f'API call successful, but no {record_path} are available in the Workspace/Model combination. Alternatively, please check the "{record_path}" KeyPath.')
         print(
             f'API call successful, but no {record_path} are available in the Workspace/Model combination. Alternatively, please check the "{record_path}" KeyPath.')
-    except requests.exceptions.HTTPError as err:
-        print(
-            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-        logging.error(
-            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-        sys.exit(1)
-    except requests.exceptions.RequestException as err:
-        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        sys.exit(1)
     except Exception as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
         logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
@@ -494,7 +434,7 @@ def fetch_ids(database_file, **kwargs):
 
 
 # === Query and Load data to Anaplan  ===
-def upload_records_to_anaplan(database_file, token_type, write_sample_files, chunk_size=15000, **kwargs):
+def upload_records_to_anaplan(base_uri, database_file, write_sample_files, chunk_size=15000, **kwargs):
 
     # set the SQL query
     if kwargs["select_all_query"]:
@@ -538,15 +478,8 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
 
         # Set the file chunk count
         if not write_sample_files:
-            body = {'chunkCount': chunk_count}
-            uri = f'https://api.anaplan.com/2/0/workspaces/{kwargs["workspace_id"]}/models/{kwargs["model_id"]}/files/{kwargs["file_id"]}'
-            res = requests.post(uri, json=body, headers={
-                'Content-Type': 'application/json',
-                'Authorization': token_type + Globals.Auth.access_token
-            })
-
-            # Check for unfavorable status codes
-            res.raise_for_status()
+            uri = f'{base_uri}/workspaces/{kwargs["workspace_id"]}/models/{kwargs["model_id"]}/files/{kwargs["file_id"]}'
+            anaplan_api(uri=uri, verb="POST", body={'chunkCount': chunk_count})
 
             print(
                 f'{record_count} records will be uploaded in {chunk_count} chunks to "{kwargs["file_name"]}"')
@@ -597,15 +530,11 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
                 else:
                     csv_record_set = df.to_csv(index=False, header=False)
 
-            uri = f'https://api.anaplan.com/2/0/workspaces/{kwargs["workspace_id"]}/models/{kwargs["model_id"]}/files/{kwargs["file_id"]}/chunks/{count}'
-            res = requests.put(uri, data=csv_record_set, headers={
-                'Content-Type': 'application/octet-stream',
-                'Authorization': token_type + Globals.Auth.access_token
-            })
+            uri = f'{base_uri}/workspaces/{kwargs["workspace_id"]}/models/{kwargs["model_id"]}/files/{kwargs["file_id"]}/chunks/{count}'
 
-            # Check for unfavorable status codes
-            res.raise_for_status()
+            res = anaplan_api(uri=uri, verb="PUT", data=csv_record_set)
 
+            # If status code 204 is returned, then chunk upload is successful
             if res.status_code == 204:
                 print(f'Uploaded: {chunk_row_count} records to "{kwargs["file_name"]}"')
                 logger.info(f'Uploaded: {chunk_row_count} records to "{kwargs["file_name"]}"')
@@ -624,17 +553,6 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
     except sqlite3.Error as err:
         print(f'SQL error: {err.args} /  SQL Statement: {sql}')
         logger.error(f'SQL error: {err.args} /  SQL Statement: {sql}')
-
-    except requests.exceptions.HTTPError as err:
-        print(
-            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-        logging.error(
-            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-        sys.exit(1)
-    except requests.exceptions.RequestException as err:
-        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        sys.exit(1)
     except Exception as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
         logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
@@ -643,11 +561,6 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
 
 # === Execute Process  ===
 def execute_process(settings, database_file):
-    get_headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer ' + Globals.Auth.access_token
-    }
 
     # Fetch Workspace, Model, and Process Ids
     workspace_id = fetch_ids(
@@ -662,24 +575,17 @@ def execute_process(settings, database_file):
         uri = f'{settings["uris"]["integrationApi"]}/workspaces/{workspace_id}/models/{model_id}/processes/{process_id}/tasks'
 
         # Run Process
-        res = requests.post(uri, headers=get_headers, json={"localeName": "en_US"})
-
-        # Check for unfavorable status codes
-        res.raise_for_status()
+        res = anaplan_api(uri=uri, verb="POST", body={"localeName": "en_US"})
 
         # Isolate task_id
         task_id = json.loads(res.text)['task']['taskId']
-
 
         # Monitor Process by looping until complete with a 1 second delay between each loop
         uri = f'{uri}/{task_id}'
         state = 'NOT_STARTED'
         while state != 'COMPLETE':
             # Fetch status
-            res = requests.get(uri, headers=get_headers)
-
-            # Check for unfavorable status codes
-            res.raise_for_status()
+            res = anaplan_api(uri=uri, verb="GET")
 
             # Isolate task state
             state = json.loads(res.text)['task']['taskState']
@@ -691,16 +597,6 @@ def execute_process(settings, database_file):
         print(f'Audit log refresh is complete')
         logging.info(f'Audit log refresh is complete')
 
-    except requests.exceptions.HTTPError as err:
-        print(
-            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-        logging.error(
-            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-        sys.exit(1)
-    except requests.exceptions.RequestException as err:
-        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
-        sys.exit(1)
     except Exception as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
         logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
@@ -709,11 +605,6 @@ def execute_process(settings, database_file):
 
 # === Upload Time Stamp  ===
 def upload_time_stamp(settings, database_file):
-    get_headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer ' + Globals.Auth.access_token
-    }
 
     # Fetch Workspace and Model Ids
     workspace_id = fetch_ids(
@@ -734,7 +625,6 @@ def upload_time_stamp(settings, database_file):
             module_id = key['moduleId']
         if key['name'] == settings['targetAnaplanModel']['refreshLogLineItems'][1]:
             line_item_id_2 = key['id']
-
 
     # Get ID of target List
     uri = f'{base_uri}/lists'
@@ -757,12 +647,21 @@ def upload_time_stamp(settings, database_file):
 
 
 # === Interface with Anaplan REST API   ===
-def anaplan_api(uri, verb, body={}):
-    get_headers = {
+def anaplan_api(uri, verb, data=None, body={}, token_type="Bearer "):
+
+    # Set the header based upon the REST API verb    
+    if verb == 'PUT':
+        get_headers = {
+            'Content-Type': 'application/octet-stream',
+            'Accept': 'application/json',
+            'Authorization': token_type + Globals.Auth.access_token
+        }
+    else: 
+        get_headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Authorization': 'Bearer ' + Globals.Auth.access_token
-    }
+            'Authorization': token_type + Globals.Auth.access_token
+        }
 
     # Select operation based upon the the verb
     try:
@@ -772,7 +671,7 @@ def anaplan_api(uri, verb, body={}):
             case 'POST':
                 res = requests.post(uri, headers=get_headers, json=body)
             case 'PUT':
-                res = requests.put(uri, headers=get_headers)
+                res = requests.put(uri, headers=get_headers, data=data)
             case 'DELETE':
                 res = requests.delete(uri, headers=get_headers)
             case 'PATCH':

@@ -16,8 +16,6 @@ import AnaplanOps
 # TODO option to push all data from SQLite database to Anaplan
 # TODO notify when there is a warning in the process
 # TODO If `lastRun` is 0, then set `AuditData->tableDrop` to true and clear Anaplan model
-# TODO refactor REST API Calls
-# TODO pass `settings` and kwargs versus current approach in `refresh_sequence`
 
 
 def main():
@@ -51,18 +49,17 @@ def main():
 	if register:
 		logger.info(
 			f'Registering the device with Client ID: {Globals.Auth.client_id}')
-		AnaplanOauth.get_device_id(uri=settings['uris']['deviceId'])
-		AnaplanOauth.get_tokens(uri=settings['uris']['tokens'], database=token_db)
+		AnaplanOauth.get_device_id(uri=f'{settings["uris"]["oauthService"]}/device/code')
+		AnaplanOauth.get_tokens(uri=f'{settings["uris"]["oauthService"]}/token', database=token_db)
 
 	else:
 		print('Skipping device registration and refreshing the access_token')
 		logger.info('Skipping device registration and refreshing the access_token')
-		AnaplanOauth.refresh_tokens(
-			uri=settings['uris']['tokens'], database=token_db, delay=0)
+		AnaplanOauth.refresh_tokens(uri=f'{settings["uris"]["oauthService"]}/token', database=token_db, delay=0)
 
 	# Start background thread to refresh the `access_token`
 	refresh_token = AnaplanOauth.refresh_token_thread(
-		1, name="Refresh Token", delay=Globals.Auth.token_ttl, uri=settings['uris']['tokens'], database=token_db)
+		1, name="Refresh Token", delay=Globals.Auth.token_ttl, uri=f'{settings["uris"]["oauthService"]}/token', database=token_db)
 	refresh_token.start()
 
 	# Invoke functional Anaplan operations
