@@ -1,6 +1,8 @@
-SELECT *  FROM events e;
+SELECT e."index" , e.eventDate, e.id  FROM events e -- where e.id = 124574834675218693;
 
-SELECT count(*)  FROM events e WHERE e.eventDate >  1680094087000;
+--SELECT count(*)  FROM events e WHERE e.eventDate >  1680094087000;
+
+SELECT count(*) FROM events e WHERE e.eventDate>1681166545001
 
 DROP table events ;
 
@@ -24,7 +26,7 @@ SELECT * FROM cloudworks c ;
 SELECT * FROM files f ;
 
 SELECT 
-	printf("%.0f", e.eventDate / 1000) || printf("%09d", e.[index] ) as LOAD_ID ,
+	printf("%.0f", e.eventDate / 1000) || printf("%09d", e.[level_0] ) as LOAD_ID ,
 	e.id as AUDIT_ID , 
 	datetime(e.eventDate/1000 , 'unixepoch') as EVENT_DATE ,
 	e.eventTimeZone as EVENT_TIMEZONE , 
@@ -96,7 +98,7 @@ LEFT JOIN models m ON e."additionalAttributes.modelId" = m.id
 LEFT JOIN models m2 ON e.objectId = m2.id
 LEFT JOIN cloudworks cw on e.objectId = cw.integrationId 
 LEFT JOIN act_codes ac on e.eventTypeId = ac.[Event Code]
-LEFT JOIN actions a on e."additionalAttributes.actionId" || e.objectId  = a.id || a.model_id 
+LEFT JOIN actions a on e."additionalAttributes.actionId" || e.objectId  = a.id || a.model_id ;
 WHERE e.eventDate > 1680000031000
 LIMIT 15000 OFFSET 0;
 

@@ -27,7 +27,7 @@ def refresh_events(settings):
     database_file = f'{Globals.Paths.databases}/{settings["database"]}'
 
     # If toggled on, drop events table
-    if targetModelObjects['auditData']['tableDrop']:
+    if targetModelObjects['auditData']['tableDrop'] or settings['lastRun']==0:
         db.drop_table(database_file=database_file,
                       table=targetModelObjects['auditData']['table'])
 
@@ -64,7 +64,6 @@ def refresh_events(settings):
         print(f'There were no audit events since the last run')
         logging.info(f'There were no audit events since the last run')
     
-
 
 # ===  If there are new events then refresh Anaplan object and upload the latest data to Anaplan ===
 def refresh_sequence(settings, database_file, uris, targetModelObjects):
@@ -180,9 +179,10 @@ def get_incremental_audit_events(uri, token_type, database_file, database_table,
 
         # Set request with `last_run` value. If last_run is non-zero then increment by 1 millisecond
         if last_run == 0:
-            res = requests.post(uri, headers=get_headers, json={"from": last_run})
+            res = requests.post(uri, headers=get_headers, json={"from": 0})
         else:
-            res = requests.post(uri, headers=get_headers, json={"from": last_run+1})
+            last_run = last_run + 1
+            res = requests.post(uri, headers=get_headers, json={"from": last_run})
 
         # Check for unfavorable status codes
         res.raise_for_status()
@@ -510,8 +510,8 @@ def upload_records_to_anaplan(database_file, token_type, write_sample_files, chu
         sql = sql.replace('{{tenant_name}}',
                           kwargs['tenant_name']).replace('{{time_stamp}}', Globals.Timestamps.gmt_epoch)
 
-        # Update sql with the last run date
-        last_run = kwargs['last_run']
+        # Update sql with the last run date increment by 1 millisecond
+        last_run = kwargs['last_run'] + 1
         sql = f'{sql} \nWHERE e.eventDate>{last_run}'
         rc_sql = f'SELECT count(*) FROM events e WHERE e.eventDate>{last_run}'
 
@@ -756,7 +756,7 @@ def upload_time_stamp(settings, database_file):
                           {"dimensionId": list_id, "itemName": Globals.Timestamps.gmt_epoch}], "value": Globals.Counts.audit_records}])
 
 
-
+# === Interface with Anaplan REST API   ===
 def anaplan_api(uri, verb, body={}):
     get_headers = {
             'Content-Type': 'application/json',

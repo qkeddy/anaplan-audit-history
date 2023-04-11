@@ -14,8 +14,10 @@ import Globals
 import AnaplanOps
 
 # TODO option to push all data from SQLite database to Anaplan
-# TODO option to load all data from audit regardless of last incremental run
 # TODO notify when there is a warning in the process
+# TODO If `lastRun` is 0, then set `AuditData->tableDrop` to true and clear Anaplan model
+# TODO refactor REST API Calls
+# TODO pass `settings` and kwargs versus current approach in `refresh_sequence`
 
 
 def main():
