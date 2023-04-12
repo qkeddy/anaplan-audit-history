@@ -10,7 +10,7 @@ import time
 import argparse
 import json
 import pathlib
-import globals_x
+import globals
 
 # === Clear Console ===
 def clear_console():
@@ -21,14 +21,14 @@ def clear_console():
 
 # === Set Paths ===
 operating_path = str(pathlib.Path(__file__).parent.resolve())
-globals_x.Paths.scripts = operating_path
-globals_x.Paths.databases = operating_path
-globals_x.Paths.logs = operating_path
+globals.Paths.scripts = operating_path
+globals.Paths.databases = operating_path
+globals.Paths.logs = operating_path
 
 # === Setup Logger ===
 # Dynamically set logfile name based upon current date.
 local_time = time.strftime("%Y%m%d", time.localtime())
-log_file = f'{globals_x.Paths.logs}/{local_time}-ANAPLAN-RUN.LOG'
+log_file = f'{globals.Paths.logs}/{local_time}-ANAPLAN-RUN.LOG'
 log_file_level = logging.INFO  # Options: INFO, WARNING, DEBUG, INFO, ERROR, CRITICAL
 logging.basicConfig(filename=log_file,
                     filemode='a',  # Append to Log
@@ -40,7 +40,7 @@ logging.info("************** Logger Started ****************")
 # === Read in configuration ===
 def read_configuration_settings():
     try:
-        with open(f'{globals_x.Paths.scripts}/settings.json', 'r') as settings_file:
+        with open(f'{globals.Paths.scripts}/settings.json', 'r') as settings_file:
             settings = json.load(settings_file)
         logging.info("Configuration read in successfully")
         return settings
@@ -53,7 +53,7 @@ def read_configuration_settings():
 # === Update configuration file ===
 def update_configuration_settings(object, value, key):
     try:
-        with open(f'{globals_x.Paths.scripts}/settings.json', 'w') as settings_file:
+        with open(f'{globals.Paths.scripts}/settings.json', 'w') as settings_file:
             object[f'{key}'] = value
             json.dump(object, settings_file, indent=4)
         logging.info("Configuration updated successfully")

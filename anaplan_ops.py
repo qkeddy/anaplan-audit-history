@@ -11,8 +11,8 @@ import sys
 import json
 import time
 
-import globals_x
-import utils_x
+import globals
+import utils
 import database_ops as db
 
 # Enable logger
@@ -24,7 +24,7 @@ def refresh_events(settings):
     # Set variables
     uris = settings['uris']
     targetModelObjects = settings['targetAnaplanModel']['targetModelObjects']
-    database_file = f'{globals_x.Paths.databases}/{settings["database"]}'
+    database_file = f'{globals.Paths.databases}/{settings["database"]}'
 
     # If toggled on, drop events table
     if targetModelObjects['auditData']['tableDrop'] or settings['lastRun']==0:
@@ -54,7 +54,7 @@ def refresh_events(settings):
                         database_file=database_file)
 
         # Update `setting.json` with lastRun Date (set by Get Events)
-        utils_x.update_configuration_settings(
+        utils.update_configuration_settings(
             object=settings, value=latest_run, key='lastRun')
 
 
@@ -233,7 +233,7 @@ def refresh_sequence(settings, database_file, uris, targetModelObjects):
 # ===  Load user activity codes from file  ===
 def get_usr_activity_codes(database_file, table):
     try:
-        df = pd.read_csv(f'{globals_x.Paths.scripts}/activity_events.csv')
+        df = pd.read_csv(f'{globals.Paths.scripts}/activity_events.csv')
         db.update_table(database_file=database_file,
                         table=table, df=df, mode='replace')
     except Exception as err:
@@ -442,13 +442,13 @@ def upload_records_to_anaplan(base_uri, database_file, write_sample_files, chunk
         rc_sql = f'SELECT count(*) FROM {kwargs["table"]}'
     else:
         # Open SQL File in read mode
-        sql_file = open(f'{globals_x.Paths.scripts}/audit_query.sql', 'r')
+        sql_file = open(f'{globals.Paths.scripts}/audit_query.sql', 'r')
         # read whole file to a string
         sql = sql_file.read()
 
         # Update sql with tenant name
         sql = sql.replace('{{tenant_name}}',
-                          kwargs['tenant_name']).replace('{{time_stamp}}', globals_x.Timestamps.gmt_epoch)
+                          kwargs['tenant_name']).replace('{{time_stamp}}', globals.Timestamps.gmt_epoch)
 
         # Update sql with the last run date increment by 1 millisecond
         last_run = kwargs['last_run'] + 1
@@ -471,7 +471,7 @@ def upload_records_to_anaplan(base_uri, database_file, write_sample_files, chunk
 
         # If fetching audit records, then capture record count
         if not kwargs["select_all_query"]:
-            globals_x.Counts.audit_records = record_count
+            globals.Counts.audit_records = record_count
 
         # Get the number of chunks and set the Anaplan File Chunk Count
         chunk_count = math.ceil(record_count / chunk_size)
@@ -637,13 +637,13 @@ def upload_time_stamp(settings, database_file):
     # Add the new ID (epoch time) to the `LOAD_ID` list
     uri = f'{base_uri}/lists/{list_id}/items?action=add'
     res = anaplan_api(uri, 'POST', body={"items": [
-                      {"name": globals_x.Timestamps.gmt_epoch, "code": globals_x.Timestamps.gmt_epoch}]})
+                      {"name": globals.Timestamps.gmt_epoch, "code": globals.Timestamps.gmt_epoch}]})
 
     # Inject data to the module
     uri = f'{base_uri}/modules/{module_id}/data'
     res = anaplan_api(uri, 'POST', body=[{"lineItemId": line_item_id_1, "dimensions": [
-                      {"dimensionId": list_id, "itemName": globals_x.Timestamps.gmt_epoch}], "value": globals_x.Timestamps.local_time_stamp}, {"lineItemId": line_item_id_2, "dimensions": [
-                          {"dimensionId": list_id, "itemName": globals_x.Timestamps.gmt_epoch}], "value": globals_x.Counts.audit_records}])
+                      {"dimensionId": list_id, "itemName": globals.Timestamps.gmt_epoch}], "value": globals.Timestamps.local_time_stamp}, {"lineItemId": line_item_id_2, "dimensions": [
+                          {"dimensionId": list_id, "itemName": globals.Timestamps.gmt_epoch}], "value": globals.Counts.audit_records}])
 
 
 # === Interface with Anaplan REST API   ===
@@ -654,13 +654,13 @@ def anaplan_api(uri, verb, data=None, body={}, token_type="Bearer "):
         get_headers = {
             'Content-Type': 'application/octet-stream',
             'Accept': 'application/json',
-            'Authorization': token_type + globals_x.Auth.access_token
+            'Authorization': token_type + globals.Auth.access_token
         }
     else: 
         get_headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Authorization': token_type + globals_x.Auth.access_token
+            'Authorization': token_type + globals.Auth.access_token
         }
 
     # Select operation based upon the the verb
