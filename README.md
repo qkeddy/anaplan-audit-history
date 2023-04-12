@@ -19,10 +19,12 @@ A Python project that provides the ability to fetch Anaplan audit history and fo
 - [How to Contribute](#how-to-contribute)
 
 ## Overview
-This project is a combination of technologies that showcase the ability to:
-* Interfaces with most of the Anaplan REST APIs (OAuth Service API, Integration API, Audit API, SCIM API, and CloudWorks API).
-* Uses Python Pandas to convert data from a web services format (JSON) to tabular data frames.
-* Leverages SQLite to transform and blend various record sets into a clean reportable format prior to uploading to Anaplan.
+This project is a combination of technologies to extract [Anaplan Audit events](https://help.anaplan.com/ef0ac1f3-fd1d-4dc2-a205-2ae4f5b22a7d-Tracked-user-activity-events) from an Anaplan tenant and convert this data into a meaningful and reportable format. 
+
+The technologies used include the following:
+* Interface with most of the Anaplan REST APIs (OAuth Service API, Integration API, Audit API, SCIM API, and CloudWorks API).
+* Use Python Pandas to convert data from a web services format (JSON) to tabular data frames.
+* Leverage SQLite to transform and blend various record sets into a clean reportable format prior to uploading to Anaplan.
 
 A link to the GitHub repository can be viewed [here](https://github.com/qkeddy/anaplan-audit-history).
 
@@ -30,14 +32,18 @@ A link to the GitHub repository can be viewed [here](https://github.com/qkeddy/a
 
 ### Usage of different Anaplan APIs
 In order to provide Anaplan audit data in a reportable and meaningful format, the following Anaplan REST APIs needed to be leveraged:
+* **OAuth Service API** - to authenticate and refresh the `access_token` based the `client_id` and `refresh_token`.
 * **Audit API** - to fetch the audit records.
 * **Integration API** - to fetch metadata about Anaplan objects such as `data sources`, `Processes`, and `Actions`. Additionally, the bulk API was used to upload and audit data into a downloadable Anaplan Audit Reporting Model as well as the transaction API for adding refresh log entries. 
 * **SCIM API** - to fetch user Anaplan user metadata.
 * **CloudWorks API** - to fetch CloudWorks integration metadata.
-* **OAuth Service API** - to authenticate and refresh the `access_token` based the `client_id` and `refresh_token`.
+
 
 ### Leverages SQL for Advanced Transformation
 In order to transform and combine data into a reporting format, standard ANSI SQL is leveraged to perform all the required data transformations prior to loading and reporting the data in Anaplan. The [SQL](https://github.com/qkeddy/anaplan-audit-history/blob/main/audit_query.sql) reads from SQLite tables that are dynamically generated.
+
+### Converts REST API Web Services data to a tabular format
+Python Pandas is used to convert Anaplan data retrieved in a web services format (JSON) to tabular data frames. In turn this data can be directly loaded to a relational database or to targets such as Anaplan. 
 
 ### Support for Extended Audit History and Incremental Updates
 Anaplan maintains a maximum of 30 days of audit history. By storing the audit history in a SQLite database, history beyond the 30 days can be preserved. This history can grow with incremental updates of the audit data since the last execution run. 
