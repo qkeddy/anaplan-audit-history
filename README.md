@@ -1,5 +1,5 @@
-# Anaplan Python Operations
-Anaplan administrative operations developed for Python
+# Anaplan Audit History
+A Python project that provides the ability to fetch Anaplan audit history and format the data into a meaningful and reportable format and load that data an Anaplan Reporting Model.
 
 ![badmath](https://img.shields.io/github/license/qkeddy/anaplan-python-ops)
 ![badmath](https://img.shields.io/github/issues/qkeddy/anaplan-python-ops)
@@ -7,62 +7,80 @@ Anaplan administrative operations developed for Python
 ![badmath](https://img.shields.io/github/watchers/qkeddy/anaplan-python-ops)
 ![badmath](https://img.shields.io/github/forks/qkeddy/anaplan-python-ops)
 
-## Description
-Demonstrates using the Anaplan REST API with OAuth with device-based authorization. The code highlights how to generate a `device_id`, `access_token`, and `refresh_token`. Additionally, the code highlights a multi-threaded approach to request a new `access_token` while performing other longer running operations such as a large data load. Please note that with this code example, the concept is simulated by calling ***Get Workspaces*** multiple times. 
-
-A link to the GitHub repository can be viewed [here](https://github.com/qkeddy/anaplan-python-ops).
-
 ## Table of Contents
 
-- [Deployment](#deployment)
+- [Overview](#overview)
 - [Features](#features)
+- [Deployment](#deployment)
 - [Usage](#usage)
 - [Tests](#tests)
 - [Credits](#credits)
 - [License](#license)
 - [How to Contribute](#how-to-contribute)
 
-## Deployment
-1. Fork and clone project repo
-2. Using `pip install`, download and install the following Python libraries
-`sys`, 
-`logging`, 
-`threading`, 
-`requests`,
-`json`,
-`time`,
-`pyjwt`, and
-`apsw`
-3. Create a device authorization code grant (known as a device grant in Anaplan). More information is available [here](https://help.anaplan.com/2ef7b883-fe87-4194-b028-ef6e7bbf8e31-OAuth2-API). 
+## Overview
+This project is a combination of technologies that showcase the ability to:
+* Interfaces with most of the Anaplan REST APIs (OAuth Service API, Integration API, Audit API, SCIM API, and CloudWorks API).
+* Uses Python Pandas to convert data from a web services format (JSON) to tabular data frames.
+* Leverages SQLite to transform and blend various record sets into a clean reportable format prior to uploading to Anaplan.
 
-
+A link to the GitHub repository can be viewed [here](https://github.com/qkeddy/anaplan-audit-history).
 
 ## Features
-- Dynamically creates a new `access_token` using a `refresh_token` on an independent worker thread.
-- Secure storage of tokens
+
+### Usage of different Anaplan APIs
+In order to provide Anaplan audit data in a reportable and meaningful format, the following Anaplan REST APIs needed to be leveraged:
+* **Audit API** - to fetch the audit records.
+* **Integration API** - to fetch metadata about Anaplan objects such as `data sources`, `Processes`, and `Actions`. Additionally, the bulk API was used to upload and audit data into a downloadable Anaplan Audit Reporting Model as well as the transaction API for adding refresh log entries. 
+* **SCIM API** - to fetch user Anaplan user metadata.
+* **CloudWorks API** - to fetch CloudWorks integration metadata.
+* **OAuth Service API** - to authenticate and refresh the `access_token` based the `client_id` and `refresh_token`.
+
+### Leverages SQL for Advanced Transformation
+In order to transform and combine data into a reporting format, standard ANSI SQL is leveraged to perform all the required data transformations prior to loading and reporting the data in Anaplan. The [SQL](https://github.com/qkeddy/anaplan-audit-history/blob/main/audit_query.sql) reads from SQLite tables that are dynamically generated.
+
+### Support for Extended Audit History and Incremental Updates
+Anaplan maintains a maximum of 30 days of audit history. By storing the audit history in a SQLite database, history beyond the 30 days can be preserved. This history can grow with incremental updates of the audit data since the last execution run. 
+
+### Detailed logging 
+All Anaplan REST API interactions and operations are logged to a daily log that can be used for ongoing monitoring.
+
+## Deployment
+1. Fork and clone project repo.
+2. Runtime environment requires `Python 3.11.1` or greater.
+3. Using `pip install`, download and install the following Python libraries
+`pandas`, `pytz`, `jwt` and `apsw`.
+4. Create an Anaplan device authorization code grant. More information is available [here](https://help.anaplan.com/2ef7b883-fe87-4194-b028-ef6e7bbf8e31-OAuth2-API). 
 
 ## Usage
 
-1. When executing the first time on a particular device, open the CLI in the project folder and run `python3 anaplan.py -r -c <<enter Client ID>>`.
+1. When executing the first time on a particular device, open the CLI in the project folder and run `python3 Main.py -r -c <<enter Client ID>>`. This will return a unique URI that needs to be opened with browser that has never logged into Anaplan (e.g. Chrome Incognito Browser). The OAuth workflow will then require an Anaplan non-SSO (exception user) to login to Anaplan to authenticate and register the device ID. 
 
-2. After the above step, the script can be executed unattended by simply executing `python3 anaplan.py`.
+![image](./images/anaplan-audit-export-device-registration.gif)
+
+2. After the above step, the script can be executed unattended by simply executing `python3 Main.py`.
+
+![image](./images/anaplan-audit-export-execution.gif)
 
 3. To see all command line arguments, start the script with `-h`.
 
-4. To update any of the Anaplan API URLs, please edit the file `settings.json`.
+![image](./images/anaplan-audit-export-help.gif)
 
-Note: The `client_id` and `refresh_token` are stored as encrypted values in a SQLite database. As an alternative, a solution like [auth0](https://auth0.com/) would further enhance security. 
+4. To update any of the Anaplan API URLs or other Anaplan Model configurations, please edit the file `settings.json` stored in the project folder.
+
+Note: The `client_id` and `refresh_token` are stored as encrypted and salted values in a SQLite database that is automatically created upon execution. As an alternative, solutions like [auth0](https://auth0.com/) or [Amazon KMS](https://aws.amazon.com/kms/) would further enhance security. 
 
 ## Tests
 Currently, no automated unit tests have been built. 
 
 ## Credits
-- [Quinlan Eddy](https://github.com/qkeddy)
+- [Quinlan Eddy](https://github.com/qkeddy) - Primary development of the Python code
+- [Chris Stauffer](https://www.linkedin.com/in/jcstauffer/) - Data design, requirements settings, and the build of the Anaplan Reporting Model
 
 ## License
 MIT License
 
-Copyright (c) 2022 Quin Eddy
+Copyright (c) 2023 Quin Eddy
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

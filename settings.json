@@ -2,7 +2,7 @@
     "anaplanTenantName": "Quin Eddy Employee Tenant",
     "writeSampleFilesOverride": false,
     "database": "audit.db3",
-    "lastRun": 1681181621000,
+    "lastRun": 0,
     "uris": {
         "deviceId": "https://us1a.app.anaplan.com/oauth/device/code",
         "tokens": "https://us1a.app.anaplan.com/oauth/token",
