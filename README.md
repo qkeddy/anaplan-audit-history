@@ -11,7 +11,7 @@ A Python project that provides the ability to fetch Anaplan audit history and fo
 
 - [Overview](#overview)
 - [Features](#features)
-- [Deployment](#deployment)
+- [Deployment](#deployment--requirements)
 - [Usage](#usage)
 - [Tests](#tests)
 - [Credits](#credits)
@@ -51,12 +51,13 @@ Anaplan maintains a maximum of 30 days of audit history. By storing the audit hi
 ### Detailed logging 
 All Anaplan REST API interactions and operations are logged to a daily log that can be used for ongoing monitoring. The log is stored in the project directory.
 
-## Deployment
+## Deployment & Requirements
 1. Fork and clone project repo.
 2. Runtime environment requires `Python 3.11.1` or greater.
 3. Using `pip install`, download and install the following Python libraries
 `pandas`, `pytz`, `jwt` and `apsw`.
-4. Create an Anaplan device authorization code grant. More information is available [here](https://help.anaplan.com/2ef7b883-fe87-4194-b028-ef6e7bbf8e31-OAuth2-API). 
+4. Create an Anaplan device authorization code grant. More information is available [here](https://help.anaplan.com/2ef7b883-fe87-4194-b028-ef6e7bbf8e31-OAuth2-API).
+5. Assign the Anaplan user executing the runtime the role of [Tenant Auditor](https://help.anaplan.com/e4588d12-fb85-4064-b204-677c603713a7-Tenant-auditor).
 
 ## Usage
 
