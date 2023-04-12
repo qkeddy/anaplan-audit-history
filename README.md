@@ -43,7 +43,7 @@ In order to transform and combine data into a reporting format, standard ANSI SQ
 Anaplan maintains a maximum of 30 days of audit history. By storing the audit history in a SQLite database, history beyond the 30 days can be preserved. This history can grow with incremental updates of the audit data since the last execution run. 
 
 ### Detailed logging 
-All Anaplan REST API interactions and operations are logged to a daily log that can be used for ongoing monitoring.
+All Anaplan REST API interactions and operations are logged to a daily log that can be used for ongoing monitoring. The log is stored in the project directory.
 
 ## Deployment
 1. Fork and clone project repo.
