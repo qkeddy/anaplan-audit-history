@@ -4,8 +4,6 @@
     "database": "audit.db3",
     "lastRun": 0,
     "uris": {
-        "deviceId": "https://us1a.app.anaplan.com/oauth/device/code",
-        "tokens": "https://us1a.app.anaplan.com/oauth/token",
         "oauthService": "https://us1a.app.anaplan.com/oauth",
         "integrationApi": "https://api.anaplan.com/2/0",
         "auditApi": "https://audit.anaplan.com/audit/api/1",
