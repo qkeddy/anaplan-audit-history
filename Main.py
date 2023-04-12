@@ -8,7 +8,7 @@ import datetime
 import pytz
 
 
-import Utils
+import Utilsx
 import AnaplanOauth
 import Globals
 import AnaplanOps
@@ -21,13 +21,13 @@ import AnaplanOps
 
 def main():
 	# Clear the console
-	Utils.clear_console()
+	Utilsx.clear_console()
 
 	# Enable logging
 	logger = logging.getLogger(__name__)
 
 	# Get configurations from `settings.json` file
-	settings = Utils.read_configuration_settings()
+	settings = Utilsx.read_configuration_settings()
 
 	# Get and set current time stamp
 	ts = datetime.datetime.now(pytz.timezone("US/Eastern"))
@@ -35,7 +35,7 @@ def main():
 	Globals.Timestamps.gmt_epoch = ts.strftime('%s')
 
 	# Get configurations from the CLI
-	args = Utils.read_cli_arguments()
+	args = Utilsx.read_cli_arguments()
 	register = args.register
 
 	# Set SQLite database for token database

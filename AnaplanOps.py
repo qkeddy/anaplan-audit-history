@@ -12,7 +12,7 @@ import json
 import time
 
 import Globals
-import Utils
+import Utilsx
 import DatabaseOps as db
 
 # Enable logger
@@ -54,7 +54,7 @@ def refresh_events(settings):
                         database_file=database_file)
 
         # Update `setting.json` with lastRun Date (set by Get Events)
-        Utils.update_configuration_settings(
+        Utilsx.update_configuration_settings(
             object=settings, value=latest_run, key='lastRun')
 
 
