@@ -32,10 +32,10 @@ A link to the GitHub repository can be viewed [here](https://github.com/qkeddy/a
 
 ### Usage of different Anaplan APIs
 In order to provide Anaplan audit data in a reportable and meaningful format, the following Anaplan REST APIs needed to be leveraged:
-* **OAuth Service API** - to authenticate and refresh the `access_token` based the `client_id` and `refresh_token`.
+* **OAuth Service API** - to authenticate and refresh the `access_token` based on the `client_id` and `refresh_token`.
 * **Audit API** - to fetch the audit records.
-* **Integration API** - to fetch metadata about Anaplan objects such as `data sources`, `Processes`, and `Actions`. Additionally, the bulk API was used to upload and audit data into a downloadable Anaplan Audit Reporting Model as well as the transaction API for adding refresh log entries. 
-* **SCIM API** - to fetch user Anaplan user metadata.
+* **Integration API** - to fetch metadata about Anaplan objects such as `data sources`, `Processes`, and `Actions`. Additionally, to refresh content to the target Anaplan Audit Reporting Model, the bulk API is used to upload the report-ready audit data and the transaction API is leveraged for updating the latest timestamp.
+* **SCIM API** - to fetch Anaplan user metadata.
 * **CloudWorks API** - to fetch CloudWorks integration metadata.
 
 
