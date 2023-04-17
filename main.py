@@ -15,8 +15,9 @@ import anaplan_ops
 
 # TODO option to push all data from SQLite database to Anaplan
 # TODO notify when there is a warning in the process
-# TODO If `lastRun` is 0, clear Anaplan model
-# TODO create clean metadata lists of items in the audit log for files and actions (via select distinct)
+
+# TODO - Chris
+# TODO   1) Add filter to load of workspaces, models, etc. 
 
 
 def main():

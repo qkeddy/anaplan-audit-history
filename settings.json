@@ -15,6 +15,7 @@
         "workspace": "Workspace #1",
         "model": "Audit Report",
         "process": "Update Anaplan Audit Environment",
+        "clearListProcess": "Clear Lists",
         "batchIdList": "BATCH_ID",
         "refreshLogLineItems": [
             "Time Stamp",

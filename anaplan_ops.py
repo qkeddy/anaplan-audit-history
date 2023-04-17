@@ -46,11 +46,22 @@ def refresh_events(settings):
                          uris=uris,
                          targetModelObjects=targetModelObjects)
         
+        # If `lastRun` is 0, then clear `LOAD_ID` list
+        if settings['lastRun']==0:
+            execute_process(uri=settings['uris']['integrationApi'],
+                            workspace=settings['targetAnaplanModel']['workspace'],
+                            model=settings['targetAnaplanModel']['model'],
+                            process=settings['targetAnaplanModel']['clearListProcess'],
+                            database_file=database_file)
+        
         # Upload the latest time stamp to the `Refresh Log`
         upload_time_stamp(settings=settings, database_file=database_file)
 
-        
-        execute_process(settings=settings,
+        # Execute the Process to reload audit data
+        execute_process(uri=settings["uris"]["integrationApi"],
+                        workspace=settings['targetAnaplanModel']['workspace'],
+                        model=settings['targetAnaplanModel']['model'],
+                        process=settings['targetAnaplanModel']['process'],
                         database_file=database_file)
 
         # Update `setting.json` with lastRun Date (set by Get Events)
@@ -560,22 +571,25 @@ def upload_records_to_anaplan(base_uri, database_file, write_sample_files, chunk
 
 
 # === Execute Process  ===
-def execute_process(settings, database_file):
+def execute_process(uri, workspace, model, process, database_file):
 
     # Fetch Workspace, Model, and Process Ids
     workspace_id = fetch_ids(
-        database_file=database_file, workspace=settings['targetAnaplanModel']['workspace'], type='workspaces')
+        database_file=database_file, workspace=workspace, type='workspaces')
     model_id = fetch_ids(
-        database_file=database_file, model=settings['targetAnaplanModel']['model'], type='models', workspace_id=workspace_id)
+        database_file=database_file, model=model, type='models', workspace_id=workspace_id)
     process_id = fetch_ids(
-        database_file=database_file, action=settings['targetAnaplanModel']['process'], type='actions', workspace_id=workspace_id, model_id=model_id)
+        database_file=database_file, action=process, type='actions', workspace_id=workspace_id, model_id=model_id)
 
     try:
         # Construct URI
-        uri = f'{settings["uris"]["integrationApi"]}/workspaces/{workspace_id}/models/{model_id}/processes/{process_id}/tasks'
+        uri = f'{uri}/workspaces/{workspace_id}/models/{model_id}/processes/{process_id}/tasks'
 
         # Run Process
         res = anaplan_api(uri=uri, verb="POST", body={"localeName": "en_US"})
+
+        print(f'Executing process "{process}" belonging to the "{workspace}" / "{model}" combination')
+        logger.info(f'Executing process "{process}" belonging to the "{workspace}" / "{model}" combination')
 
         # Isolate task_id
         task_id = json.loads(res.text)['task']['taskId']
