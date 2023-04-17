@@ -56,11 +56,20 @@ def main():
 	else:
 		print('Skipping device registration and refreshing the access_token')
 		logger.info('Skipping device registration and refreshing the access_token')
-		anaplan_oauth.refresh_tokens(uri=f'{settings["uris"]["oauthService"]}/token', database=token_db, delay=0)
+		anaplan_oauth.refresh_tokens(
+			uri=f'{settings["uris"]["oauthService"]}/token', 
+			database=token_db, 
+			delay=0,
+			rotatable_token=settings['rotatableToken'])
 
 	# Start background thread to refresh the `access_token`
 	refresh_token = anaplan_oauth.refresh_token_thread(
-		1, name="Refresh Token", delay=globals.Auth.token_ttl, uri=f'{settings["uris"]["oauthService"]}/token', database=token_db)
+		thread_id = 1, 
+		name="Refresh Token", 
+		delay=globals.Auth.token_ttl, 
+		uri=f'{settings["uris"]["oauthService"]}/token', database=token_db,
+		rotatable_token=settings['rotatableToken']
+		)
 	refresh_token.start()
 
 	# Invoke functional Anaplan operations

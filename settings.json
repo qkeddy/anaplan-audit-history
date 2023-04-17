@@ -2,6 +2,7 @@
     "anaplanTenantName": "Quin Eddy Employee Tenant",
     "writeSampleFilesOverride": false,
     "database": "audit.db3",
+    "rotatableToken": false,
     "lastRun": 0,
     "uris": {
         "oauthService": "https://us1a.app.anaplan.com/oauth",
