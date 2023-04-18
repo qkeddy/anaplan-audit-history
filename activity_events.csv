@@ -47,6 +47,7 @@ USR-33,Assign,The associated model ID.,An object associated to a corresponding l
 USR-34,Copy branch,The associated model ID.,--
 USR-35,Create,The associated model ID.,A create action was made.
 USR-36,Data export from action,The associated model ID.,(Within Anaplan)
+USR-38,NEEDS TO BE CONFIRMED,--
 USR-39,Model imported via Manage models,The associated model ID.,--
 USR-40,An optimizer action has been executed,--
 USR-41,A process action has been executed,--

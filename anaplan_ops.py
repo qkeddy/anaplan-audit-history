@@ -700,8 +700,12 @@ def get_process_run_status(uri, database_file, workspace_id, model_id):
                 print(f'ACTION: {action_name} ({result["objectId"]})')
 
                 # Fetch each error/warning in the nested results
-                for nested_result in result['details']:
-                    print(f'\t{nested_result["localMessageText"]}')
+                for sub_result in result['details']:
+                    print(f'\t{sub_result["localMessageText"]}')
+
+                    # Look for any missing EVENT_IDs
+                    if sub_result['localMessageText'] == 'Item not located in EVENT_ID list':
+                        print(f'\t\t{sub_result["values"]}')
 
                 # Write to log file
                 logging.warning(
