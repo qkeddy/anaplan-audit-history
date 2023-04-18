@@ -13,12 +13,6 @@ import anaplan_oauth
 import globals
 import anaplan_ops
 
-# TODO option to push all data from SQLite database to Anaplan
-# TODO notify when there is a warning in the process
-
-# TODO - Chris
-# TODO   1) Add filter to load of workspaces, models, etc. 
-
 
 def main():
 	# Clear the console

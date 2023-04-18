@@ -35,9 +35,7 @@ def refresh_events(settings):
     latest_run = get_incremental_audit_events(base_uri=uris['auditApi'], database_file=database_file, database_table=targetModelObjects['auditData']['table'],
                                               add_unique_id=targetModelObjects['auditData']['addUniqueId'], mode=targetModelObjects['auditData']['mode'], record_path="response", json_path=['meta', 'paging'], last_run=settings['lastRun'])
     
-
     # If there are no events and last_run has not changed, then exit. Otherwise, continue on.
-    # latest_run = 0
     if latest_run > settings['lastRun']:
 
         # Execute the refresh audit data
@@ -382,19 +380,19 @@ def fetch_ids(database_file, **kwargs):
                 row = cursor.fetchone()
                 if row is None:
                     raise ValueError(
-                        f'"{kwargs["workspace"]}" is an invalid file name and not found in Anaplan.')
+                        f'"{kwargs["workspace"]}" is an invalid Workspace name and not found in Anaplan.')
                 id = row[0]
                 print(
                     f'Found Workspace "{kwargs["workspace"]}" with the ID "{id}"')
                 logger.info(
                     f'Found Workspace "{kwargs["workspace"]}" with the ID "{id}"')
             case 'models':
-                sql = f'SELECT m.id from models m  WHERE m.currentWorkspaceId = "{kwargs["workspace_id"]}" AND m.name = "{kwargs["model"]}";'
+                sql = f'SELECT m.id from models m WHERE m.currentWorkspaceId = "{kwargs["workspace_id"]}" AND m.name = "{kwargs["model"]}";'
                 cursor.execute(sql)
                 row = cursor.fetchone()
                 if row is None:
                     raise ValueError(
-                        f'"{kwargs["model"]}" is an invalid file name and not found in Anaplan.')
+                        f'"{kwargs["model"]}" is an invalid Model name and not found in Anaplan.')
                 id = row[0]
                 print(f'Found Model "{kwargs["model"]}" with the ID "{id}"')
                 logger.info(
@@ -405,7 +403,7 @@ def fetch_ids(database_file, **kwargs):
                 row = cursor.fetchone()
                 if row is None:
                     raise ValueError(
-                        f'"{kwargs["action"]}" is an invalid file name and not found in Anaplan.')
+                        f'"{kwargs["action"]}" is an invalid Action name and not found in Anaplan.')
                 id = row[0]
                 print(
                     f'Found Import Action "{kwargs["action"]}" with the ID "{id}"')
@@ -428,6 +426,69 @@ def fetch_ids(database_file, **kwargs):
 
         # Return ID
         return id
+
+    except ValueError as ve:
+        logger.error(ve)
+        print(ve)
+        return -1
+
+    except sqlite3.Error as err:
+        print(f'SQL error: {err.args} /  SQL Statement: {sql}')
+        logger.error(f'SQL error: {err.args} /  SQL Statement: {sql}')
+
+    except Exception as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+
+
+# === Fetch Anaplan object names of particular IDs  ===
+def fetch_names(database_file, **kwargs):
+    # Establish connection to SQLite
+    connection = sqlite3.Connection(database_file)
+
+    # Create a cursor to perform operations on the database
+    cursor = connection.cursor()
+
+    # Initialize variables
+    sql = ""
+
+    # For each object execute specific SQL to identify the ID
+    name = ""
+    try:
+        match kwargs["type"]:
+            case 'workspaces':
+                sql = f'SELECT w.name FROM workspaces w where w.id = "{kwargs["workspace_id"]}";'
+                cursor.execute(sql)
+                row = cursor.fetchone()
+                if row is None:
+                    raise ValueError(
+                        f'"{kwargs["workspace_id"]}" is an invalid Workspace ID and not found in Anaplan.')
+                name = row[0]
+
+            case 'models':
+                sql = f'SELECT m.name from models m WHERE m.id = "{kwargs["model_id"]}";'
+                cursor.execute(sql)
+                row = cursor.fetchone()
+                if row is None:
+                    raise ValueError(
+                        f'"{kwargs["model"]}" is an invalid Model ID and not found in Anaplan.')
+                name = row[0]
+
+            case 'actions':
+                sql = f'SELECT a.name FROM actions a WHERE a.workspace_id="{kwargs["workspace_id"]}" AND a.model_id="{kwargs["model_id"]}" AND a.id="{kwargs["action_id"]}";'
+                cursor.execute(sql)
+                row = cursor.fetchone()
+                if row is None:
+                    raise ValueError(
+                        f'"{kwargs["action_id"]}" is an invalid Action ID and not found in Anaplan.')
+                name = row[0]
+
+        # Close SQLite connection
+        connection.close()
+
+        # Return ID
+        return name
 
     except ValueError as ve:
         logger.error(ve)
@@ -610,6 +671,41 @@ def execute_process(uri, workspace, model, process, database_file):
 
         print(f'Audit log refresh is complete')
         logging.info(f'Audit log refresh is complete')
+
+        get_process_run_status(uri=uri, database_file=database_file, workspace_id=workspace_id, model_id=model_id)
+
+    except Exception as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+
+
+# === Get Process results  ===
+def get_process_run_status(uri, database_file, workspace_id, model_id):
+
+    try:
+        # Get detailed Process status
+        res = anaplan_api(uri=uri, verb="GET")
+
+        # Isolate the nested_results
+        nested_results = json.loads(res.text)['task']['result']['nestedResults']
+
+        # Loop over each result in nest_results
+        for result in nested_results:
+            if result['failureDumpAvailable']:
+                
+                # Fetch the name of the action
+                action_name = fetch_names(
+                    database_file=database_file, type='actions', workspace_id=workspace_id, model_id=model_id, action_id=result['objectId'])
+                print(f'ACTION: {action_name} ({result["objectId"]})')
+
+                # Fetch each error/warning in the nested results
+                for nested_result in result['details']:
+                    print(f'\t{nested_result["localMessageText"]}')
+
+                # Write to log file
+                logging.warning(
+                    f'ACTION: {action_name} ({result["objectId"]}): {result["details"]}')
 
     except Exception as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
