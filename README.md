@@ -1,11 +1,11 @@
 # Anaplan Audit History
 A Python project that provides the ability to fetch Anaplan audit history and format the data into a meaningful and reportable format and load that data an Anaplan Reporting Model.
 
-![badmath](https://img.shields.io/github/license/qkeddy/anaplan-python-ops)
-![badmath](https://img.shields.io/github/issues/qkeddy/anaplan-python-ops)
-![badmath](https://img.shields.io/github/languages/top/qkeddy/anaplan-python-ops)
-![badmath](https://img.shields.io/github/watchers/qkeddy/anaplan-python-ops)
-![badmath](https://img.shields.io/github/forks/qkeddy/anaplan-python-ops)
+![badmath](https://img.shields.io/github/license/qkeddy/anaplan-audit-history)
+![badmath](https://img.shields.io/github/issues/qkeddy/anaplan-audit-history)
+![badmath](https://img.shields.io/github/languages/top/qkeddy/anaplan-audit-history)
+![badmath](https://img.shields.io/github/watchers/qkeddy/anaplan-audit-history)
+![badmath](https://img.shields.io/github/forks/qkeddy/anaplan-audit-history)
 
 ## Table of Contents
 
