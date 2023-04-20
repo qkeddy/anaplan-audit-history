@@ -39,7 +39,8 @@ In order to provide Anaplan audit data in a reportable and meaningful format, th
 * **CloudWorks API** - to fetch CloudWorks integration metadata.
 
 Here is an illustration of the APIs used:
-![image](./images/anaplan-audit-data-diagram.png)
+
+![image](./images/anaplan-audit-data-diagram-non-transparent-50px.png)
 
 ### Leverages SQL for Advanced Transformation
 In order to transform and combine data into a reporting format, standard ANSI SQL is leveraged to perform all the required data transformations prior to loading and reporting the data in Anaplan. The [SQL](https://github.com/qkeddy/anaplan-audit-history/blob/main/audit_query.sql) reads from SQLite tables that are dynamically generated.
