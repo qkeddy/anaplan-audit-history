@@ -87,6 +87,7 @@ def get_incremental_audit_events(base_uri, database_file, database_table, mode, 
             last_run = last_run + 1
 
         # Initial endpoint query
+        logger.info(f'uri: {uri}   last run: {last_run}')
         print(f'uri: {uri}   last run: {last_run}')
 
         # Retrieve first page of audit events
