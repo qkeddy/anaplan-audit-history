@@ -171,9 +171,9 @@ def anaplan_api(uri, body={}):
 
     except requests.exceptions.HTTPError as err:
         print(
-            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text} - check that `rotatableToken` is set properly in the `settings.json` file')
         logging.error(
-            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text} - check that `rotatableToken` is set properly in the `settings.json` file')
         sys.exit(1)
     except requests.exceptions.RequestException as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
