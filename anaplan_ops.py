@@ -34,6 +34,14 @@ def refresh_events(settings):
     # Get Events
     latest_run = get_incremental_audit_events(base_uri=uris['auditApi'], database_file=database_file, database_table=targetModelObjects['auditData']['table'],
                                               add_unique_id=targetModelObjects['auditData']['addUniqueId'], mode=targetModelObjects['auditData']['mode'], record_path="response", json_path=['meta', 'paging'], last_run=settings['lastRun'])
+    logger.info(f'latest_run value: {latest_run}')
+    print(f'latest_run value: {latest_run}')
+
+    if latest_run % 1000 != 0:
+        logger.error(f'latest run value contains a millisecond')
+        print(f'latest run value contains a millisecond')
+        logger.error(int(time.time()*1000))
+        print(int(time.time()*1000))
     
     # If there are no events and last_run has not changed, then exit. Otherwise, continue on.
     if latest_run > settings['lastRun']:
