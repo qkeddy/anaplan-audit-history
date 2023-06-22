@@ -60,9 +60,6 @@ def refresh_events(settings):
                             process=settings['targetAnaplanModel']['clearListProcess'],
                             database_file=database_file)
         
-        # Upload the latest time stamp to the `Refresh Log`
-        upload_time_stamp(settings=settings, database_file=database_file)
-
         # Execute the Process to reload audit data
         execute_process(uri=settings["uris"]["integrationApi"],
                         workspace=settings['targetAnaplanModel']['workspace'],
@@ -70,13 +67,23 @@ def refresh_events(settings):
                         process=settings['targetAnaplanModel']['process'],
                         database_file=database_file)
 
+        # Upload the latest time stamp to the `Refresh Log`
+        print(f'Updating time stamp and record count in Anaplan')
+        logging.info(f'Updating time stamp and record count in Anaplan')
+        upload_time_stamp(settings=settings, database_file=database_file)
+
         # Update `setting.json` with lastRun Date (set by Get Events)
         utils.update_configuration_settings(
             object=settings, value=latest_run, key='lastRun')
-
+        
+        print(f'Audit log refresh is complete')
+        logging.info(f'Audit log refresh is complete')
 
     else:
+        # Nothing changed, so just upload the timestamp
         # Upload the latest time stamp to the `Refresh Log`
+        print(f'No new audit logs and only updating the time stamp')
+        logging.info(f'No new audit logs and only updating the time stamp')
         upload_time_stamp(settings=settings, database_file=database_file)
 
         print(f'There were no audit events since the last run')
@@ -217,6 +224,9 @@ def refresh_sequence(settings, database_file, uris, targetModelObjects):
                            database_table=targetModelObjects['cloudWorksData']['table'], add_unique_id=targetModelObjects['cloudWorksData']['addUniqueId'], record_path="integrations", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'])
 
     # Fetch ids for target Workspace and Model from the SQLite database
+    print(f'Update Anaplan Audit Model')
+    logging.info(f'Update Anaplan Audit Model')
+
     workspace_id = fetch_ids(
         database_file=database_file, workspace=settings['targetAnaplanModel']['workspace'], type='workspaces')
     model_id = fetch_ids(
@@ -677,9 +687,6 @@ def execute_process(uri, workspace, model, process, database_file):
             # Sleep for 1 second
             print('Processing ...')
             time.sleep(1)
-
-        print(f'Audit log refresh is complete')
-        logging.info(f'Audit log refresh is complete')
 
         get_process_run_status(uri=uri, database_file=database_file, workspace_id=workspace_id, model_id=model_id)
 
