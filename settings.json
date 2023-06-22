@@ -1,5 +1,5 @@
 {
-    "anaplanTenantName": "Quin Eddy Employee Tenant",
+    "anaplanTenantName": "Employee Tenant",
     "writeSampleFilesOverride": false,
     "database": "audit.db3",
     "rotatableToken": true,
@@ -13,7 +13,7 @@
     },
     "targetAnaplanModel": {
         "workspace": "Workspace #1",
-        "model": "Audit Report",
+        "model": "Audit Report V2",
         "process": "Update Anaplan Audit Environment",
         "clearListProcess": "Clear Lists",
         "batchIdList": "BATCH_ID",
