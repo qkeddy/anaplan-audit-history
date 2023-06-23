@@ -16,6 +16,7 @@
         "model": "Audit Report V2",
         "process": "Update Anaplan Audit Environment",
         "clearListProcess": "Clear Lists",
+        "clearCtListProcess": "Clear CT Lists",
         "batchIdList": "BATCH_ID",
         "refreshLogLineItems": [
             "Time Stamp",

@@ -52,13 +52,20 @@ def refresh_events(settings):
                          uris=uris,
                          targetModelObjects=targetModelObjects)
         
-        # If `lastRun` is 0, then clear `LOAD_ID` list
+        # If `lastRun` is 0, then clear `LOAD_ID` list with the `CT` lists 
         if settings['lastRun']==0:
             execute_process(uri=settings['uris']['integrationApi'],
                             workspace=settings['targetAnaplanModel']['workspace'],
                             model=settings['targetAnaplanModel']['model'],
                             process=settings['targetAnaplanModel']['clearListProcess'],
                             database_file=database_file)
+        else:
+            execute_process(uri=settings['uris']['integrationApi'],
+                            workspace=settings['targetAnaplanModel']['workspace'],
+                            model=settings['targetAnaplanModel']['model'],
+                            process=settings['targetAnaplanModel']['clearCtListProcess'],
+                            database_file=database_file)
+
         
         # Execute the Process to reload audit data
         execute_process(uri=settings["uris"]["integrationApi"],
