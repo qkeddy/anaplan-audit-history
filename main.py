@@ -6,6 +6,7 @@ import sys
 import logging
 import datetime
 import pytz
+import time
 
 
 import utils
@@ -31,7 +32,7 @@ def main():
 	# Get and set current time stamp
 	ts = datetime.datetime.now(pytz.timezone("US/Eastern"))
 	globals.Timestamps.local_time_stamp = ts.strftime("%d-%m-%Y %H:%M:%S %Z")
-	globals.Timestamps.gmt_epoch = ts.strftime('%s')
+	globals.Timestamps.gmt_epoch = int(time.time())
 
 	# Get configurations from the CLI
 	args = utils.read_cli_arguments()
