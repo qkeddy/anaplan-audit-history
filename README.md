@@ -58,10 +58,12 @@ All Anaplan REST API interactions and operations are logged to a daily log that 
 1. Fork and clone project repo.
 2. Runtime environment requires `Python 3.11.1` or greater.
 3. Using `pip install`, download and install the following Python libraries
-`pandas`, `pytz`, `jwt`, `requests` and `apsw`.
+`pandas`, `pytz`, `pyjwt`*, `requests` and `apsw`.
 4. Create an Anaplan device authorization code grant. More information is available [here](https://help.anaplan.com/2ef7b883-fe87-4194-b028-ef6e7bbf8e31-OAuth2-API).
 5. Assign the Anaplan user executing the runtime the role of [Tenant Auditor](https://help.anaplan.com/e4588d12-fb85-4064-b204-677c603713a7-Tenant-auditor).
 6. Review the `settings.json` file and set the ` "rotatableToken"` key to either `true` or `false`. Also review the `"uris"` key and update any base URI depending on your Anaplan region. 
+
+* Note - if you previously installed `jwt`, you will need to perform a `pip uninstall jwt` and `pip uninstall pyjtw`. Once this is complete, please reinstall `pyjwt` using `pip install pwjwt`.
 
 ## Usage
 
