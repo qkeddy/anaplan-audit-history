@@ -33,7 +33,7 @@ def refresh_events(settings):
 
     # Get Events
     latest_run = get_incremental_audit_events(base_uri=uris['auditApi'], database_file=database_file, database_table=targetModelObjects['auditData']['table'],
-                                              add_unique_id=targetModelObjects['auditData']['addUniqueId'], mode=targetModelObjects['auditData']['mode'], record_path="response", json_path=['meta', 'paging'], last_run=settings['lastRun'])
+                                              add_unique_id=targetModelObjects['auditData']['addUniqueId'], mode=targetModelObjects['auditData']['mode'], record_path="response", json_path=['meta', 'paging'], last_run=settings['lastRun'], batch_size=settings['auditBatchSize'])
     logger.info(f'latest_run value: {latest_run}')
     print(f'latest_run value: {latest_run}')
 
@@ -98,8 +98,8 @@ def refresh_events(settings):
     
 
 # ===  Get Anaplan Audit Events ===
-def get_incremental_audit_events(base_uri, database_file, database_table, mode, record_path, add_unique_id, json_path, last_run):
-    uri = f'{base_uri}/events/search'
+def get_incremental_audit_events(base_uri, database_file, database_table, mode, record_path, add_unique_id, json_path, last_run, batch_size):
+    uri = f'{base_uri}/events/search?limit={batch_size}'
     res = None
     count = 1
 
@@ -317,7 +317,11 @@ def get_anaplan_paged_data(uri, database_file, database_table, add_unique_id, re
         while page_index + page_size < total_results:
             try: 
                 # Get next page
-                next_uri = f'{uri}&{page_index_key[depth-1].lower()}={page_index + page_size}'
+                if '?' in uri:
+                    next_uri = f'{uri}&{page_index_key[depth-1]}={page_index + page_size}'
+                else: 
+                    next_uri = f'{uri}?{page_index_key[depth-1]}={page_index + page_size}'
+
                 logger.info(f'API Endpoint: {next_uri}')
                 print(f'API Endpoint: {next_uri}')
 
@@ -333,7 +337,7 @@ def get_anaplan_paged_data(uri, database_file, database_table, add_unique_id, re
 
                 # Get values to retrieve next page
                 match depth:
-                    case 0: page_index = res[page_index_key[0]]
+                    case 1: page_index = res[page_index_key[0]]
                     case 3: page_index = res[page_index_key[0]][page_index_key[1]][page_index_key[2]]
 
             except KeyError | AttributeError as err:
@@ -813,9 +817,7 @@ def anaplan_api(uri, verb, data=None, body={}, token_type="Bearer "):
                 res = requests.delete(uri, headers=get_headers)
             case 'PATCH':
                 res = requests.patch(uri, headers=get_headers)
-
-        # Override linting
-        # pyright: reportUnboundVariable=false
+        
         res.raise_for_status()
 
         return res

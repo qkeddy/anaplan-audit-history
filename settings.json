@@ -4,6 +4,7 @@
     "database": "audit.db3",
     "rotatableToken": true,
     "lastRun": 0,
+    "auditBatchSize": 10000,
     "uris": {
         "oauthService": "https://us1a.app.anaplan.com/oauth",
         "integrationApi": "https://api.anaplan.com/2/0",
