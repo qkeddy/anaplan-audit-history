@@ -202,7 +202,7 @@ def refresh_sequence(settings, database_file, uris, targetModelObjects):
     # Get Models in all Workspace
     for ws_id in workspace_ids:
         model_ids = get_anaplan_paged_data(uri=f'{uris["integrationApi"]}/workspaces/{ws_id}/models?modelDetails=true', database_file=database_file,
-                                           database_table=targetModelObjects['modelsData']['table'], add_unique_id=targetModelObjects['modelsData']['addUniqueId'], record_path="models", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], return_id=True)
+                                           database_table=targetModelObjects['modelsData']['table'], add_unique_id=targetModelObjects['modelsData']['addUniqueId'], record_path="models", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], return_id=True, workspace_id=1)
 
         # Loop through each Model to get details
         for mod_id in model_ids:
@@ -375,7 +375,12 @@ def get_anaplan_paged_data(uri, database_file, database_table, add_unique_id, re
 
         # Return Workspace & Model IDs for future iterations
         if return_id:
-            return df['id'].tolist()
+            if workspace_id==None:
+                return df['id'].tolist()
+            else:
+                filtered_df = df[df['activeState'] != 'ARCHIVED']
+                return filtered_df['id'].tolist()
+        
 
     except KeyError:
         # Notification when no data is available for a particular API call
