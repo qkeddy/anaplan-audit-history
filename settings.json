@@ -1,4 +1,7 @@
 {
+    "authenticationMode": "basic",
+    "username": "enter_user_name_for_basic_auth",
+    "password": "enter_password_for_basic_auth",
     "anaplanTenantName": "Employee Tenant",
     "writeSampleFilesOverride": false,
     "database": "audit.db3",
@@ -7,6 +10,7 @@
     "auditBatchSize": 10000,
     "uris": {
         "oauthService": "https://us1a.app.anaplan.com/oauth",
+        "authenticationApi": "https://auth.anaplan.com/token",
         "integrationApi": "https://api.anaplan.com/2/0",
         "auditApi": "https://audit.anaplan.com/audit/api/1",
         "scimApi": "https://api.anaplan.com/scim/1/0/v2",
