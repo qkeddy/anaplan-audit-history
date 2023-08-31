@@ -1,7 +1,7 @@
 {
-    "authenticationMode": "basic",
-    "username": "enter_user_name_for_basic_auth",
-    "password": "enter_password_for_basic_auth",
+    "authenticationMode": "cert_auth",
+    "publicCertPath": "./quin_eddy_public.crt",
+    "privateKeyPath": "./quin_eddy_private.key",
     "anaplanTenantName": "Employee Tenant",
     "writeSampleFilesOverride": false,
     "database": "audit.db3",

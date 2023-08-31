@@ -137,3 +137,5 @@ workspaces.json
 model_history.csv
 .DS_Store
 scratch.sql
+*.key
+*.crt

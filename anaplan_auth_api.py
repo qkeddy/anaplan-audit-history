@@ -12,7 +12,13 @@ import threading
 import apsw
 import apsw.ext
 import globals
-import base64
+
+from base64 import b64encode
+from Crypto.PublicKey import RSA
+from Crypto.Random import get_random_bytes
+from Crypto.Signature import pkcs1_15
+from Crypto.Hash import SHA512
+
 
 # Enable logger
 logger = logging.getLogger(__name__)
@@ -24,7 +30,7 @@ apsw.ext.log_sqlite()
 # Login into Anaplan with basic authentication
 def basic_authentication(uri, username, password):
     # Encode credentials
-    encoded_credentials = str(base64.b64encode((f'{username}:{password}'
+    encoded_credentials = str(b64encode((f'{username}:{password}'
                                                 ).encode('utf-8')).decode('utf-8'))
     # Set headers
     headers = {
@@ -48,6 +54,88 @@ def basic_authentication(uri, username, password):
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
         logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
         sys.exit(1)
+
+
+# ===  Login to Anaplan - Basic Auth  ===
+# Login into Anaplan with basic authentication
+def cert_authentication(uri, public_cert_path, private_key_path, private_key_passphrase=None):
+
+    # Open private key, import key using optional passphrase, and unpack signer for usage with encryption
+    keyFile = open(private_key_path, 'r', encoding='utf-8')
+    myKey = RSA.import_key(keyFile.read(), passphrase=private_key_passphrase)
+    signer = pkcs1_15.new(myKey)
+
+    # create random 100 byte message
+    message_bytes = get_random_bytes(100)
+
+    # UNENCRYPTED message b64encoded
+    message_bytes_b64e = b64encode(message_bytes)
+    message_str_b64e = message_bytes_b64e.decode('ascii')
+
+    # ENCRYPTED message b64encoded
+    message_hash = SHA512.new(message_bytes)
+    message_hash_signed = signer.sign(message_hash)
+    message_str_signed_b64e = b64encode(message_hash_signed).decode('utf-8')
+
+    # Extract Public Certificate string
+    pubic_cert = extract_certificate_string(public_cert_path)
+
+    # Set headers
+    headers = {
+        'Authorization': 'CACertificate ' + pubic_cert,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    }
+
+    body = {
+        'encodedData': message_str_b64e,
+        'encodedSignedData': message_str_signed_b64e
+    }
+
+    try:
+        logger.info("Trying to log into Anaplan using Certificate Authentication")
+        print("Trying to log into Anaplan using Certificate Authentication")
+        res = anaplan_api(uri=uri, headers=headers, body=body)
+
+        # Set values in AuthToken Dataclass
+        globals.Auth.access_token = res['tokenInfo']['tokenValue']
+        # globals.Auth.refresh_token = res['tokenInfo']['refreshTokenId']    # Not used
+        logger.info("Access Token and Refresh Token received")
+        print("Access Token and Refresh Token received")
+
+    except Exception as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+
+
+# Validate that the public certificate is in the valid PEM format
+def is_valid_certificate_pem(pem_content):
+    return "-----BEGIN CERTIFICATE-----" in pem_content and "-----END CERTIFICATE-----" in pem_content
+
+
+# Validate that the private key is in the valid PEM format
+def is_valid_private_key_pem(pem_content):
+    return "-----BEGIN PRIVATE KEY-----" in pem_content and "-----END PRIVATE KEY-----" in pem_content
+
+# Extract public certificate for use in the header
+def extract_certificate_string(pem_file_path):
+    with open(pem_file_path, 'r') as pem_file:
+        pem_content = pem_file.read()
+        if is_valid_certificate_pem(pem_content):
+            lines = pem_content.strip().split("\n")
+            # certificate_string = "".join(
+            # line for line in lines if not line.startswith("-----"))
+            certificate_lines = [
+                line for line in lines if not line.startswith("-----")]
+            certificate_string = ''.join(certificate_lines)
+            return certificate_string
+        else:
+            logging.error(
+                "Private or Public Key is not is not a proper PEM format. Please check the format and retry.")
+            print(
+                "Private or Public Key is not is not a proper PEM format. Please check the format and retry.")
+            sys.exit(1)
 
 
 # ===  Fetch new Access Token  ===

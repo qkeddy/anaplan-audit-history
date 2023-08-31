@@ -73,5 +73,11 @@ def read_cli_arguments():
                         type=str, help="OAuth Client ID")
     parser.add_argument('-t', '--token_ttl', action='store',
                         type=str, help="Token time to live value in seconds")
+    parser.add_argument('-u', '--user', action='store',
+                        type=str, help='Username for basic authentication')
+    parser.add_argument('-p', '--password', action='store',
+                        type=str, help='Password for basic authentication')
+    parser.add_argument('-k', '--private_key_passphrase', action='store',
+                        type=str, help='Passphrase for private key')
     args = parser.parse_args()
     return args
