@@ -18,7 +18,6 @@ import anaplan_ops
 # TODO - Add Model History
 # TODO - Add option not to load to Anaplan
 # TODO - Add ability to execute export actions of users in a particular model to get visiting users
-# TODO - Update settings.json to use both Model and Workspace IDs
 
 
 def main():

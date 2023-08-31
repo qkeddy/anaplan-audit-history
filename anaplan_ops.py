@@ -10,6 +10,7 @@ import math
 import sys
 import json
 import time
+import re
 
 import globals
 import utils
@@ -234,10 +235,15 @@ def refresh_sequence(settings, database_file, uris, targetModelObjects):
     print(f'Update Anaplan Audit Model')
     logging.info(f'Update Anaplan Audit Model')
 
-    workspace_id = fetch_ids(
-        database_file=database_file, workspace=settings['targetAnaplanModel']['workspace'], type='workspaces')
-    model_id = fetch_ids(
-        database_file=database_file, model=settings['targetAnaplanModel']['model'], type='models', workspace_id=workspace_id)
+    # Set model_id to the target `workspace` value and then check if it is an name or ID
+    workspace_id = settings['targetAnaplanModel']['workspace']
+    if is_workspace_id(workspace_id):
+        workspace_id = fetch_ids(database_file=database_file, workspace=workspace_id, type='workspaces')
+
+    # Set model_id to the target `model` value and then check if it is an name or ID
+    model_id = settings['targetAnaplanModel']['model']
+    if is_model_id(model_id):
+        model_id = fetch_ids(database_file=database_file, model=model_id, type='models', workspace_id=workspace_id)
 
     # Fetch Import Data Source ids and loop over each target type and upload data
     write_sample_files = False
@@ -263,6 +269,16 @@ def refresh_sequence(settings, database_file, uris, targetModelObjects):
         # Upload data to Anaplan
         upload_records_to_anaplan(base_uri=uris['integrationApi'],
                                   database_file=database_file, write_sample_files=write_sample_files, workspace_id=workspace_id, model_id=model_id, file_id=id, file_name=key['importFile'], table=key['table'], select_all_query=key['selectAllQuery'], add_unique_id=key['addUniqueId'], acronym=key['acronym'], tenant_name=settings['anaplanTenantName'], last_run=settings['lastRun'])
+
+
+# ===  Check if target model is an ID or a name  ===
+def is_model_id(input_str):
+    return re.match(r'^[A-Z0-9]{32}$', input_str) is None
+
+
+# ===  Check if target workspace is an ID or a name  ===
+def is_workspace_id(input_str):
+    return re.match(r'^[a-z0-9]{32}$', input_str) is None
 
 
 # ===  Load user activity codes from file  ===
