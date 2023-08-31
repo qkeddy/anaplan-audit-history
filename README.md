@@ -22,7 +22,7 @@ A Python project that provides the ability to fetch Anaplan audit history and fo
 This project is a combination of technologies to extract [Anaplan Audit events](https://help.anaplan.com/ef0ac1f3-fd1d-4dc2-a205-2ae4f5b22a7d-Tracked-user-activity-events) from an Anaplan tenant and convert this data into a meaningful and reportable format. 
 
 The technologies used include the following:
-* Interface with most of the Anaplan REST APIs (OAuth Service API, Integration API, Audit API, SCIM API, and CloudWorks API).
+* Interface with most of the Anaplan REST APIs (Authentication APIs, OAuth Service API, Integration API, Audit API, SCIM API, and CloudWorks API).
 * Use Python Pandas to convert data from a web services format (JSON) to tabular data frames.
 * Leverage SQLite to transform and blend various record sets into a clean reportable format prior to uploading to Anaplan.
 
@@ -32,7 +32,8 @@ A link to the GitHub repository can be viewed [here](https://github.com/qkeddy/a
 
 ### Usage of different Anaplan APIs
 In order to provide Anaplan audit data in a reportable and meaningful format, the following Anaplan REST APIs needed to be leveraged:
-* **OAuth Service API** - to authenticate and refresh the `access_token` based on the `client_id` and `refresh_token`.
+* **OAuth Service API** - to authenticate and refresh the `access_token` based on the `client_id` and `refresh_token` (only when using OAuth).
+* **Authentication API** - to authenticate and refresh the `access_token` based on a valid username and password combination or valid certificate in the PEM format. 
 * **Audit API** - to fetch the audit records.
 * **Integration API** - to fetch metadata about Anaplan objects such as `data sources`, `Processes`, and `Actions`. Additionally, to refresh content to the target Anaplan Audit Reporting Model, the bulk API is used to upload the report-ready audit data and the transaction API is leveraged for updating the latest timestamp.
 * **SCIM API** - to fetch Anaplan user metadata.
@@ -58,34 +59,39 @@ All Anaplan REST API interactions and operations are logged to a daily log that 
 1. Fork and clone project repo.
 2. Runtime environment requires `Python 3.11.1` or greater.
 3. Using `pip install`, download and install the following Python libraries
-`pandas`, `pytz`, `pyjwt`*, `requests` and `apsw`.
+`pandas`, `pytz`, `pyjwt`**, `requests` and `apsw`.
 4. Create an Anaplan device authorization code grant. More information is available [here](https://help.anaplan.com/2ef7b883-fe87-4194-b028-ef6e7bbf8e31-OAuth2-API).
 5. Assign the Anaplan user executing the runtime the role of [Tenant Auditor](https://help.anaplan.com/e4588d12-fb85-4064-b204-677c603713a7-Tenant-auditor).
 6. Review the `settings.json` file and set the following values: 
-    - Set the ` "rotatableToken"` key to either `true` or `false` depending on how your `Device Grant OAuth Client` has been configured. Note this implementation only supports Device Grant OAuth Clients.
+    - Set the `"authenticationMode"` to either `basic`, `cert_auth`, or `OAuth` (case-sensitive)
+    - If using `cert_auth`, then provide proper paths and the filename of the Public Certificate and the Private Key. Note that both files need to be in a PEM format. Please see the [Interactive Certificate Authority (CA) certificate guide](https://support.anaplan.com/interactive-certificate-authority-ca-certificate-guide-437d0b63-c0be-4650-9711-0d3370593697), if you need to convert your MIME certificates to the required format to support Anaplan Certificate authentication.
+    - If using `OAuth`, set the `"rotatableToken"` key to either `true` or `false` depending on how your `Device Grant OAuth Client` has been configured in the Anaplan Administrative Console. Note this implementation only supports Device Grant OAuth Clients and not Authorization Code Grants. If `"rotatableToken"` is set to `true`, then it is recommended that the `Refresh token lifetime` is set to a longer duration than the default 43,200 seconds. Using the default require an end-user to re-authenticate the device after 12 hours.  
     - Depending on your Anaplan instance, please review the `"uris"` key and update any base URI depending on your Anaplan region. 
     - Update the `"anaplanTenantName"` to the name of your tenant.
     - Under the `"targetAnaplanModel"` key, update the name of your Workspace and Model. Please use the actual Workspace and Model names and ***not*** the IDs.
     - If there is ever the requirement to reset the extracted audit data, set the `"lastRun"` to `0`
 
 
-* Note - if you previously installed `jwt`, you will need to perform a `pip uninstall jwt` ***before*** you install `pyjwt`.
+** Note - if you previously installed `jwt`, you will need to perform a `pip uninstall jwt` ***before*** you install `pyjwt`.
 
 ## Usage
 
-1. When executing the first time on a particular device, open the CLI in the project folder and run `python3 Main.py -r -c <<enter Client ID>>`. This will return a unique URI that needs to be opened with browser that has never logged into Anaplan (e.g. Chrome Incognito Browser). The OAuth workflow will then require an Anaplan non-SSO (exception user) to login to Anaplan to authenticate and register the device ID. 
+1. If using basic authentication, then please start the Python script with the arguments `-u` and `-p` followed by your username and password.
+    - Example: `python .\main.py -u your_user_name -p your_password`
+
+2. If using OAuth, when executing the script for the first time on a particular device, open the CLI in the project folder and run `python .\main.py -r -c <<enter Client ID>>`. This will return a unique URI that needs to be opened with browser that has never logged into Anaplan (e.g. Chrome Incognito Browser). The OAuth workflow will then require an Anaplan non-SSO (exception user) to login to Anaplan to authenticate and register the device ID. 
 
 ![image](./images/anaplan-audit-export-device-registration.gif)
 
-2. After the above step, the script can be executed unattended by simply executing `python3 Main.py`.
+3. After the above step, the script can be executed unattended by simply executing `python .\main.py`. Please note that this also applies to using the script with certificate authentication.
 
 ![image](./images/anaplan-audit-export-execution.gif)
 
-3. To see all command line arguments, start the script with `-h`.
+4. To see all command line arguments, start the script with `-h`.
 
 ![image](./images/anaplan-audit-export-help.gif)
 
-4. To update any of the Anaplan API URLs or other Anaplan Model configurations, please edit the file `settings.json` stored in the project folder.
+5. To update any of the Anaplan API URLs or other Anaplan Model configurations, please edit the file `settings.json` stored in the project folder.
 
 Note: The `client_id` and `refresh_token` are stored as encrypted and salted values in a SQLite database that is automatically created upon execution. As an alternative, solutions like [auth0](https://auth0.com/) or [Amazon KMS](https://aws.amazon.com/kms/) would further enhance security. 
 
