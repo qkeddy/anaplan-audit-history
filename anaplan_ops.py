@@ -207,6 +207,13 @@ def refresh_sequence(settings, database_file, uris, targetModelObjects):
 
         # Loop through each Model to get details
         for mod_id in model_ids:
+            # Check if the current WorkspaceId and ModelId are in skip_workspace_model_combos
+            if {"WorkspaceId": ws_id, "ModelId": mod_id} in settings['skipWorkspaceModelCombos']:
+                print(f"Skipping WorkspaceId: {ws_id}, ModelId: {mod_id} as it is in skip_workspace_model_combos")
+                logging.info(f"Skipping WorkspaceId: {ws_id}, ModelId: {mod_id} as it is in skip_workspace_model_combos")
+                # Skip this iteration of the loop
+                continue  
+
             # Get Import Actions in all Models in all Workspaces
             get_anaplan_paged_data(uri=f'{uris["integrationApi"]}/workspaces/{ws_id}/models/{mod_id}/imports', database_file=database_file,
                                    database_table=targetModelObjects['actionsData']['table'], add_unique_id=targetModelObjects['actionsData']['addUniqueId'], record_path="imports", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'], workspace_id=ws_id, model_id=mod_id)

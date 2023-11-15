@@ -1,13 +1,17 @@
 {
     "authenticationMode": "cert_auth",
-    "publicCertPath": "./quin_eddy_public.crt",
-    "privateKeyPath": "./quin_eddy_private.key",
+    "publicCertPath": "./cert_quin_eddy_public.crt",
+    "privateKeyPath": "./quin_eddy_private-key.pem",
     "anaplanTenantName": "Employee Tenant",
     "writeSampleFilesOverride": false,
     "database": "audit.db3",
     "rotatableToken": true,
     "lastRun": 0,
     "auditBatchSize": 10000,
+    "skipWorkspaceModelCombos": [
+        { "WorkspaceId": "8a868cd9837162ef0183cd4d7ba842c0", "ModelId": "295D98F37F1B4682BE7A29035CBFB924" },
+        { "WorkspaceId": "8a868cd9837162ef0183cd4d7ba842c0", "ModelId": "295D98F37F1B4682BE7A29035CBFB888" }
+    ],
     "uris": {
         "oauthService": "https://us1a.app.anaplan.com/oauth",
         "authenticationApi": "https://auth.anaplan.com/token",

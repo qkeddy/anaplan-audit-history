@@ -139,3 +139,4 @@ model_history.csv
 scratch.sql
 *.key
 *.crt
+*.pem

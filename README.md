@@ -65,9 +65,10 @@ All Anaplan REST API interactions and operations are logged to a daily log that 
     - Set the `"authenticationMode"` to either `basic`, `cert_auth`, or `OAuth` (case-sensitive)
     - If using `cert_auth`, then provide proper paths and the filename of the Public Certificate and the Private Key. Note that both files need to be in a PEM format. Please see the [Interactive Certificate Authority (CA) certificate guide](https://support.anaplan.com/interactive-certificate-authority-ca-certificate-guide-437d0b63-c0be-4650-9711-0d3370593697), if you need to convert your MIME certificates to the required format to support Anaplan Certificate authentication.
     - If using `OAuth`, set the `"rotatableToken"` key to either `true` or `false` depending on how your `Device Grant OAuth Client` has been configured in the Anaplan Administrative Console. Note this implementation only supports Device Grant OAuth Clients and not Authorization Code Grants. Please create an Anaplan device authorization code grant. More information is available [here](https://help.anaplan.com/2ef7b883-fe87-4194-b028-ef6e7bbf8e31-OAuth2-API). If `"rotatableToken"` is set to `true`, then it is recommended that the `Refresh token lifetime` is set to a longer duration than the default 43,200 seconds. Using the default require an end-user to re-authenticate the device after 12 hours. 
+    - If there are certain Workspace and Model combinations that should not be accessed, then please add them to the `skipWorkspaceModelCombos` key. Please follow the format used and simply add additional combinations. You can safely delete the existing sample combinations. 
     - Depending on your Anaplan instance, please review the `"uris"` key and update any base URI depending on your Anaplan region. 
     - Update the `"anaplanTenantName"` to the name of your tenant.
-    - Under the `"targetAnaplanModel"` key, update the name of your Workspace and Model. Please use the actual Workspace and Model names and ***not*** the IDs.
+    - Under the `"targetAnaplanModel"` key, update the name of your Workspace and Model. Please use the actual Workspace and Model names and ***not*** the IDs. Keys under `targetModelObjects` should not typically be updated as they correspond to the target Anaplan Audit Reporting Model.
     - If there is ever the requirement to reset the extracted audit data, set the `"lastRun"` to `0`
 
 
@@ -78,19 +79,22 @@ All Anaplan REST API interactions and operations are logged to a daily log that 
 1. If using basic authentication, then please start the Python script with the arguments `-u` and `-p` followed by your username and password.
     - Example: `python .\main.py -u your_user_name -p your_password`
 
-2. If using OAuth, when executing the script for the first time on a particular device, open the CLI in the project folder and run `python .\main.py -r -c <<enter Client ID>>`. This will return a unique URI that needs to be opened with browser that has never logged into Anaplan (e.g. Chrome Incognito Browser). The OAuth workflow will then require an Anaplan non-SSO (exception user) to login to Anaplan to authenticate and register the device ID. 
+2. If using certificate authentication, then please start the Python script with the arguments using `-k` if you have a private key passphrase.
+    - Example `python .\main.py -k MyPassPhrase`
+
+3. If using OAuth, when executing the script for the first time on a particular device, open the CLI in the project folder and run `python .\main.py -r -c <<enter Client ID>>`. This will return a unique URI that needs to be opened with browser that has never logged into Anaplan (e.g. Chrome Incognito Browser). The OAuth workflow will then require an Anaplan non-SSO (exception user) to login to Anaplan to authenticate and register the device ID. 
 
 ![image](./images/anaplan-audit-export-device-registration.gif)
 
-3. After the above step, the script can be executed unattended by simply executing `python .\main.py`. Please note that this also applies to using the script with certificate authentication.
+4. After the above step, the script can be executed unattended by simply executing `python .\main.py`. Please note that this also applies to using the script with certificate authentication.
 
 ![image](./images/anaplan-audit-export-execution.gif)
 
-4. To see all command line arguments, start the script with `-h`.
+5. To see all command line arguments, start the script with `-h`.
 
 ![image](./images/anaplan-audit-export-help.gif)
 
-5. To update any of the Anaplan API URLs or other Anaplan Model configurations, please edit the file `settings.json` stored in the project folder.
+6. To update any of the Anaplan API URLs or other Anaplan Model configurations, please edit the file `settings.json` stored in the project folder.
 
 Note: The `client_id` and `refresh_token` are stored as encrypted and salted values in a SQLite database that is automatically created upon execution. As an alternative, solutions like [auth0](https://auth0.com/) or [Amazon KMS](https://aws.amazon.com/kms/) would further enhance security. 
 
