@@ -56,43 +56,50 @@ def basic_authentication(uri, username, password):
         sys.exit(1)
 
 
-# ===  Login to Anaplan - Basic Auth  ===
-# Login into Anaplan with basic authentication
+# ===  Login to Anaplan - Cert Auth  ===
+# Login into Anaplan with Certificate authentication
 def cert_authentication(uri, public_cert_path, private_key_path, private_key_passphrase=None):
 
-    # Open private key, import key using optional passphrase, and unpack signer for usage with encryption
-    keyFile = open(private_key_path, 'r', encoding='utf-8')
-    myKey = RSA.import_key(keyFile.read(), passphrase=private_key_passphrase)
-    signer = pkcs1_15.new(myKey)
-
-    # create random 100 byte message
-    message_bytes = get_random_bytes(100)
-
-    # UNENCRYPTED message b64encoded
-    message_bytes_b64e = b64encode(message_bytes)
-    message_str_b64e = message_bytes_b64e.decode('ascii')
-
-    # ENCRYPTED message b64encoded
-    message_hash = SHA512.new(message_bytes)
-    message_hash_signed = signer.sign(message_hash)
-    message_str_signed_b64e = b64encode(message_hash_signed).decode('utf-8')
-
-    # Extract Public Certificate string
-    pubic_cert = extract_certificate_string(public_cert_path)
-
-    # Set headers
-    headers = {
-        'Authorization': 'CACertificate ' + pubic_cert,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    }
-
-    body = {
-        'encodedData': message_str_b64e,
-        'encodedSignedData': message_str_signed_b64e
-    }
-
     try:
+        # Split the privateKeyPath string using ':' as a delimiter
+        private_key_path_parts = private_key_path.split(':')
+
+        # Assign the private key path and passphrase (if available)
+        private_key_path = private_key_path_parts[0]
+        private_key_passphrase = private_key_path_parts[1] if len(private_key_path_parts) > 1 else None
+
+        # Open private key, import key using optional passphrase, and unpack signer for usage with encryption
+        keyFile = open(private_key_path, 'r', encoding='utf-8')
+        myKey = RSA.import_key(keyFile.read(), passphrase=private_key_passphrase)
+        signer = pkcs1_15.new(myKey)
+
+        # create random 100 byte message
+        message_bytes = get_random_bytes(100)
+
+        # UNENCRYPTED message b64encoded
+        message_bytes_b64e = b64encode(message_bytes)
+        message_str_b64e = message_bytes_b64e.decode('ascii')
+
+        # ENCRYPTED message b64encoded
+        message_hash = SHA512.new(message_bytes)
+        message_hash_signed = signer.sign(message_hash)
+        message_str_signed_b64e = b64encode(message_hash_signed).decode('utf-8')
+
+        # Extract Public Certificate string
+        pubic_cert = extract_certificate_string(public_cert_path)
+
+        # Set headers
+        headers = {
+            'Authorization': 'CACertificate ' + pubic_cert,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        }
+
+        body = {
+            'encodedData': message_str_b64e,
+            'encodedSignedData': message_str_signed_b64e
+        }
+
         logger.info("Trying to log into Anaplan using Certificate Authentication")
         print("Trying to log into Anaplan using Certificate Authentication")
         res = anaplan_api(uri=uri, headers=headers, body=body)
@@ -102,6 +109,16 @@ def cert_authentication(uri, public_cert_path, private_key_path, private_key_pas
         # globals.Auth.refresh_token = res['tokenInfo']['refreshTokenId']    # Not used
         logger.info("Access Token and Refresh Token received")
         print("Access Token and Refresh Token received")
+    
+    except FileNotFoundError as file_err:
+        print(f'Error: The Public Certificate or Private key file is not found: {file_err} in function "{sys._getframe().f_code.co_name}"')
+        logging.error(f'Error: The Public Certificate or Private key file is not found: {file_err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+
+    except ValueError as value_err:
+        print(f'Error: Invalid private key data: {value_err} in function "{sys._getframe().f_code.co_name}". Check the passphrase of the private key.')
+        logging.error(f'Error: Invalid private key data: {value_err} in function "{sys._getframe().f_code.co_name}". Check the passphrase of the private key.')
+        sys.exit(1)
 
     except Exception as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')

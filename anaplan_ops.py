@@ -207,12 +207,24 @@ def refresh_sequence(settings, database_file, uris, targetModelObjects):
 
         # Loop through each Model to get details
         for mod_id in model_ids:
-            # Check if the current WorkspaceId and ModelId are in skip_workspace_model_combos
-            if {"WorkspaceId": ws_id, "ModelId": mod_id} in settings['skipWorkspaceModelCombos']:
-                print(f"Skipping WorkspaceId: {ws_id}, ModelId: {mod_id} as it is in skip_workspace_model_combos")
-                logging.info(f"Skipping WorkspaceId: {ws_id}, ModelId: {mod_id} as it is in skip_workspace_model_combos")
-                # Skip this iteration of the loop
-                continue  
+
+            # Check the filtering approach
+            if settings['workspaceModelFilterApproach'] == "skip":
+                # Check if the current WorkspaceId and ModelId are in skip_workspace_model_combos
+                if {"WorkspaceId": ws_id, "ModelId": mod_id} in settings['workspaceModelCombos']:
+                    print(f"Skipping WorkspaceId: {ws_id}, ModelId: {mod_id} as it is listed to be SKIPPED in the workspace_model_combos")
+                    logging.info(f"Skipping WorkspaceId: {ws_id}, ModelId: {mod_id} as it is listed to be SKIPPED in the workspace_model_combos")
+                    # Skip this iteration of the loop
+                    continue  
+            elif settings['workspaceModelFilterApproach'] == "select":
+                # Check if the current WorkspaceId and ModelId are in skip_workspace_model_combos
+                if {"WorkspaceId": ws_id, "ModelId": mod_id} not in settings['workspaceModelCombos']:
+                    if mod_id!=settings['targetAnaplanModel']['model']:
+                        print(f"Skipping WorkspaceId: {ws_id}, ModelId: {mod_id} as it is NOT SELECTED in the workspace_model_combos")
+                        logging.info(f"Skipping WorkspaceId: {ws_id}, ModelId: {mod_id} as it is NOT SELECTED in the workspace_model_combos")
+                        # Skip this iteration of the loop
+                        continue  
+
 
             # Get Import Actions in all Models in all Workspaces
             get_anaplan_paged_data(uri=f'{uris["integrationApi"]}/workspaces/{ws_id}/models/{mod_id}/imports', database_file=database_file,
@@ -693,10 +705,18 @@ def upload_records_to_anaplan(base_uri, database_file, write_sample_files, chunk
 def execute_process(uri, workspace, model, process, database_file):
 
     # Fetch Workspace, Model, and Process Ids
-    workspace_id = fetch_ids(
-        database_file=database_file, workspace=workspace, type='workspaces')
-    model_id = fetch_ids(
-        database_file=database_file, model=model, type='models', workspace_id=workspace_id)
+    if is_workspace_id(workspace):
+        workspace_id = fetch_ids(
+            database_file=database_file, workspace=workspace, type='workspaces')
+    else:
+        workspace_id=workspace
+
+    if is_model_id(model):        
+        model_id = fetch_ids(
+            database_file=database_file, model=model, type='models', workspace_id=workspace_id)
+    else:
+        model_id = model
+    
     process_id = fetch_ids(
         database_file=database_file, action=process, type='actions', workspace_id=workspace_id, model_id=model_id)
 
@@ -776,10 +796,17 @@ def get_process_run_status(uri, database_file, workspace_id, model_id):
 def upload_time_stamp(settings, database_file):
 
     # Fetch Workspace and Model Ids
-    workspace_id = fetch_ids(
-        database_file=database_file, workspace=settings['targetAnaplanModel']['workspace'], type='workspaces')
-    model_id = fetch_ids(
-        database_file=database_file, model=settings['targetAnaplanModel']['model'], type='models', workspace_id=workspace_id)
+    if is_workspace_id(settings['targetAnaplanModel']['workspace']):
+        workspace_id = fetch_ids(
+            database_file=database_file, workspace=settings['targetAnaplanModel']['workspace'], type='workspaces')
+    else:
+        workspace_id = settings['targetAnaplanModel']['workspace']
+
+    if is_model_id(settings['targetAnaplanModel']['model']):
+        model_id = fetch_ids(
+            database_file=database_file, model=settings['targetAnaplanModel']['model'], type='models', workspace_id=workspace_id)
+    else: 
+        model_id = settings['targetAnaplanModel']['model']
     
     # Construct base URI
     base_uri = f'{settings["uris"]["integrationApi"]}/workspaces/{workspace_id}/models/{model_id}'

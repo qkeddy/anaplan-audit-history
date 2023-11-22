@@ -1,16 +1,19 @@
 {
     "authenticationMode": "cert_auth",
     "publicCertPath": "./cert_quin_eddy_public.crt",
-    "privateKeyPath": "./quin_eddy_private-key.pem",
+    "privateKeyPath": "./quin_eddy_private-key.pem:",
     "anaplanTenantName": "Employee Tenant",
     "writeSampleFilesOverride": false,
     "database": "audit.db3",
     "rotatableToken": true,
     "lastRun": 0,
     "auditBatchSize": 10000,
-    "skipWorkspaceModelCombos": [
-        { "WorkspaceId": "8a868cd9837162ef0183cd4d7ba842c0", "ModelId": "295D98F37F1B4682BE7A29035CBFB924" },
-        { "WorkspaceId": "8a868cd9837162ef0183cd4d7ba842c0", "ModelId": "295D98F37F1B4682BE7A29035CBFB888" }
+    "workspaceModelFilterApproach": "select",
+    "workspaceModelCombos": [
+        {
+            "WorkspaceId": "8a868cd9837162ef0183cd4d7ba842c0",
+            "ModelId": "295D98F37F1B4682BE7A29035CBFB924"
+        }
     ],
     "uris": {
         "oauthService": "https://us1a.app.anaplan.com/oauth",
@@ -21,8 +24,8 @@
         "cloudworksApi": "https://api.cloudworks.anaplan.com/2/0"
     },
     "targetAnaplanModel": {
-        "workspace": "Workspace #1",
-        "model": "Audit Report V2",
+        "workspace": "8a868cd9837162ef0183cd4d7ba842c0",
+        "model": "9A2D888B30EA462AB7E2947054E23717",
         "process": "Update Anaplan Audit Environment",
         "clearListProcess": "Clear Lists",
         "clearCtListProcess": "Clear CT Lists",
