@@ -2,10 +2,10 @@
     "authenticationMode": "cert_auth",
     "publicCertPath": "./cert_quin_eddy_public.crt",
     "privateKeyPath": "./quin_eddy_private-key.pem:",
+    "rotatableToken": true,
     "anaplanTenantName": "Employee Tenant",
     "writeSampleFilesOverride": false,
     "database": "audit.db3",
-    "rotatableToken": true,
     "lastRun": 0,
     "auditBatchSize": 10000,
     "workspaceModelFilterApproach": "select",
@@ -13,6 +13,10 @@
         {
             "WorkspaceId": "8a868cd9837162ef0183cd4d7ba842c0",
             "ModelId": "295D98F37F1B4682BE7A29035CBFB924"
+        },
+        {
+            "WorkspaceId": "add your workspace to select or skip here",
+            "ModelId": "add your model to select or skip here"
         }
     ],
     "uris": {

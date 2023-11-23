@@ -63,14 +63,17 @@ All Anaplan REST API interactions and operations are logged to a daily log that 
 4. Assign the Anaplan user executing the runtime the roles of [Tenant Auditor](https://help.anaplan.com/e4588d12-fb85-4064-b204-677c603713a7-Tenant-auditor) and [User Admin](https://help.anaplan.com/user-administrator-aaf12b66-e782-4aba-a35b-d0e8e66aba85).
 5. Review the `settings.json` file and set the following values: 
     - Set the `"authenticationMode"` to either `basic`, `cert_auth`, or `OAuth` (case-sensitive)
-    - If using `cert_auth`, then provide proper paths and the filename of the Public Certificate and the Private Key. Note that both files need to be in a PEM format. Please see the [Interactive Certificate Authority (CA) certificate guide](https://support.anaplan.com/interactive-certificate-authority-ca-certificate-guide-437d0b63-c0be-4650-9711-0d3370593697), if you need to convert your MIME certificates to the required format to support Anaplan Certificate authentication.
+    - If using `cert_auth`, then provide proper paths and the filename of the Public Certificate and the Private Key. If you have a passphrase for your private key, then insert it after the filename seperated by a `:`.   Note that both files need to be in a PEM format. Please see the [Interactive Certificate Authority (CA) certificate guide](https://support.anaplan.com/interactive-certificate-authority-ca-certificate-guide-437d0b63-c0be-4650-9711-0d3370593697), if you need to convert your MIME certificates to the required format to support Anaplan Certificate authentication.
     - If using `OAuth`, set the `"rotatableToken"` key to either `true` or `false` depending on how your `Device Grant OAuth Client` has been configured in the Anaplan Administrative Console. Note this implementation only supports Device Grant OAuth Clients and not Authorization Code Grants. Please create an Anaplan device authorization code grant. More information is available [here](https://help.anaplan.com/2ef7b883-fe87-4194-b028-ef6e7bbf8e31-OAuth2-API). If `"rotatableToken"` is set to `true`, then it is recommended that the `Refresh token lifetime` is set to a longer duration than the default 43,200 seconds. Using the default require an end-user to re-authenticate the device after 12 hours. 
-    - If there are certain Workspace and Model combinations that should not be accessed, then please add them to the `skipWorkspaceModelCombos` key. Please follow the format used and simply add additional combinations. You can safely delete the existing sample combinations. 
-    - Depending on your Anaplan instance, please review the `"uris"` key and update any base URI depending on your Anaplan region. 
-    - Update the `"anaplanTenantName"` to the name of your tenant.
-    - Under the `"targetAnaplanModel"` key, update the name of your Workspace and Model. Please use the actual Workspace and Model names and ***not*** the IDs. Keys under `targetModelObjects` should not typically be updated as they correspond to the target Anaplan Audit Reporting Model.
-    - If there is ever the requirement to reset the extracted audit data, set the `"lastRun"` to `0`
-
+    - `anaplanTenantName` is arbitrary and can be any string of text. 
+    - `writeSampleFilesOverride` will reproduce the sample files in the `./samples` directory.
+    - `database` sets the name of the local SQLite database name file.
+    - `lastRun` is the precise time in epoch time format of the last execution. This value is used to capture only the incremental audit events since the last run. Set to `0` to for the first run or to extract all audit events from the last 30 days; otherwise do not change this value. 
+    - `auditBatchSize` sets the number of audit records received in each API request. If the performance needs to be increased, then please increase this value. Note there is a limit to how large this value can be. 
+    - `workspaceModelFilterApproach` can hold the value of either `select` or `skip` and works in combination with `workspaceModelCombos`.
+    - If there are certain Workspace and Model combinations that should not be selected or skipped, then please add them to the `workspaceModelCombos` key. Please follow the format used and simply add additional combinations. You can safely delete the existing sample combinations. 
+    - Depending on your Anaplan instance, please review the `"uris"` and update any base URI depending on your Anaplan region. 
+    - Under the `"targetAnaplanModel"` key, update the name of the target Audit Reporting Workspace ID and Model ID. Please use the actual Workspace and Model IDs and ***not*** the name. Keys under `targetModelObjects` should not typically be updated as they correspond to the target Anaplan Audit Reporting Model.
 
 ** Note - if you previously installed `jwt`, you will need to perform a `pip uninstall jwt` ***before*** you install `pyjwt`.
 
