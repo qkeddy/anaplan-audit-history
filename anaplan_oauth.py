@@ -89,13 +89,14 @@ def get_tokens(uri, database):
 # ===  Step #3 - Device grant - Get new Access Token with Refresh Token  ===
 # Response returns an updated `access_token` and `refresh_token`
 def refresh_tokens(uri, database, delay, rotatable_token):
-    # If the refresh_token is not available then read from `auth.json`
+
+    # If the refresh_token is not available then read from from the token database
     if globals.Auth.refresh_token == "none":
         tokens = read_token_db(database)
 
         if tokens['client_id'] == "empty":
-            logger.warning("This client needs to be authorized by Anaplan. Please run this script again with the following arguments: python3 anaplan.py -r -c <<enter Client ID>>. For more information, use the argument `-h`.")
-            print("This client needs to be authorized by Anaplan. Please run this script again with the following arguments: python3 anaplan.py -r -c <<enter Client ID>>. For more information, use the argument `-h`.")
+            logger.warning("This client needs to be authorized by Anaplan. Please run this script again with the following arguments: python3 main.py -r -c <<enter Client ID>>. For more information, use the argument `-h`.")
+            print("This client needs to be authorized by Anaplan. Please run this script again with the following arguments: python3 main.py -r -c <<enter Client ID>>. For more information, use the argument `-h`.")
             
             # Exit with return code 1
             sys.exit(1)
