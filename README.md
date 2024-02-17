@@ -82,22 +82,19 @@ All Anaplan REST API interactions and operations are logged to a daily log that 
 1. If using basic authentication, then please start the Python script with the arguments `-u` and `-p` followed by your username and password.
     - Example: `python .\main.py -u your_user_name -p your_password`
 
-2. If using certificate authentication, then please start the Python script with the arguments using `-k` if you have a private key passphrase.
-    - Example `python .\main.py -k MyPassPhrase`
-
-3. If using OAuth, when executing the script for the first time on a particular device, open the CLI in the project folder and run `python .\main.py -r -c <<enter Client ID>>`. This will return a unique URI that needs to be opened with browser that has never logged into Anaplan (e.g. Chrome Incognito Browser). The OAuth workflow will then require an Anaplan non-SSO (exception user) to login to Anaplan to authenticate and register the device ID. 
+2. If using OAuth, when executing the script for the first time on a particular device, open the CLI in the project folder and run `python .\main.py -r -c <<enter Client ID>>`. This will return a unique URI that needs to be opened with browser that has never logged into Anaplan (e.g. Chrome Incognito Browser). The OAuth workflow will then require an Anaplan non-SSO (exception user) to login to Anaplan to authenticate and register the device ID. 
 
 ![image](./images/anaplan-audit-export-device-registration.gif)
 
-4. After the above step, the script can be executed unattended by simply executing `python .\main.py`. Please note that this also applies to using the script with certificate authentication.
+3. After the above step, the script can be executed unattended by simply executing `python .\main.py`. Please note that this also applies to using the script with certificate authentication.
 
 ![image](./images/anaplan-audit-export-execution.gif)
 
-5. To see all command line arguments, start the script with `-h`.
+4. To see all command line arguments, start the script with `-h`.
 
 ![image](./images/anaplan-audit-export-help.gif)
 
-6. To update any of the Anaplan API URLs or other Anaplan Model configurations, please edit the file `settings.json` stored in the project folder.
+5. To update any of the Anaplan API URLs or other Anaplan Model configurations, please edit the file `settings.json` stored in the project folder.
 
 Note: The `client_id` and `refresh_token` are stored as encrypted and salted values in a SQLite database that is automatically created upon execution. As an alternative, solutions like [auth0](https://auth0.com/) or [Amazon KMS](https://aws.amazon.com/kms/) would further enhance security. 
 

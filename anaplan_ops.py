@@ -672,8 +672,8 @@ def upload_records_to_anaplan(base_uri, database_file, write_sample_files, chunk
                 else:
                     csv_record_set = df.to_csv(index=False, header=False)
 
+            # Upload chunk to Anaplan
             uri = f'{base_uri}/workspaces/{kwargs["workspace_id"]}/models/{kwargs["model_id"]}/files/{kwargs["file_id"]}/chunks/{count}'
-
             res = anaplan_api(uri=uri, verb="PUT", data=csv_record_set)
 
             # If status code 204 is returned, then chunk upload is successful
