@@ -58,7 +58,7 @@ def basic_authentication(uri, username, password):
 
 # ===  Login to Anaplan - Cert Auth  ===
 # Login into Anaplan with Certificate authentication
-def cert_authentication(uri, public_cert_path, private_key_path, private_key_passphrase=None):
+def cert_authentication(uri, public_cert_path, private_key_path):
 
     try:
         # Split the privateKeyPath string using ':' as a delimiter
