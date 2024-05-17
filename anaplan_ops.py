@@ -249,7 +249,10 @@ def refresh_sequence(settings, database_file, uris, targetModelObjects):
     # Get CloudWorks Integrations
     get_anaplan_paged_data(uri=f'{uris["cloudworksApi"]}/integrations', database_file=database_file,
                            database_table=targetModelObjects['cloudWorksData']['table'], add_unique_id=targetModelObjects['cloudWorksData']['addUniqueId'], record_path="integrations", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'])
-
+    
+    # Get Model History
+    get_model_history(base_uri=uris['integrationApi'], database_file=database_file)
+   
     # Fetch ids for target Workspace and Model from the SQLite database
     print(f'Update Anaplan Audit Model')
     logging.info(f'Update Anaplan Audit Model')
@@ -363,7 +366,7 @@ def get_anaplan_paged_data(uri, database_file, database_table, add_unique_id, re
                 # res = requests.get(next_uri, headers=get_headers)
                 res = anaplan_api(uri=next_uri, verb="GET", token_type="Bearer ").json()
 
-                # Create a temporary data from to hold the incremental records
+                # Create a temporary data frame to hold the incremental records
                 df_incremental = pd.json_normalize(res, record_path)
 
                 # Append to the incremental records to the existing Data Frame
@@ -428,6 +431,44 @@ def get_anaplan_paged_data(uri, database_file, database_table, add_unique_id, re
         logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
         sys.exit(1)
 
+
+# === Get Model History ===
+def get_model_history(base_uri, database_file):
+
+    # Loop over each Workspace & Model combination
+    rows = fetch_ids_list(database_file=database_file)
+
+    # Loop over each Workspace & Model combination
+    for row in rows:
+
+        # Get Export Actions to find Actions that will trigger the Model History export
+        uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/exports'
+        res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ").json()
+
+        if 'exports' in res:
+            for export in res['exports']:
+                if export['name'] == 'MODEL_HISTORY_EXPORT':
+                    # If a table doesn't exist, create a table to store ongoing model history results    
+
+                    # Create a table to store the current model history results or clear results. 
+
+                    # Fetch the model history by running an Anaplan Export Action (synchronously)
+                    # Download the results of the Export Action by chunk and write to the table using the `replace` mode
+
+                    print(export['name'])
+                    break
+        else:
+            print(f"No 'MODEL_HISTORY_EXPORT' action in response for URI: {uri}")
+            logger.info(f"No 'MODEL_HISTORY_EXPORT' action in response for URI: {uri}")
+
+
+    sys.exit(1)
+
+    # Run a SQL query to insert the latest model history from the staging table one incremental second after the last run
+
+    uri = f'{base_uri}/workspaces/{workspace_id}/models/{model_id}/history'
+    res = anaplan_api(uri=uri, verb="GET")
+    return res.json()
 
 # === Fetch Anaplan object IDs used for uploading data to Anaplan  ===
 def fetch_ids(database_file, **kwargs):
@@ -510,6 +551,45 @@ def fetch_ids(database_file, **kwargs):
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
         logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
         sys.exit(1)
+
+
+# === Fetch Anaplan object IDs used for uploading data to Anaplan  ===
+def fetch_ids_list(database_file):
+    # Establish connection to SQLite
+    connection = sqlite3.Connection(database_file)
+
+    # Create a cursor to perform operations on the database
+    cursor = connection.cursor()
+
+    # Initialize variables
+    sql = "SELECT currentWorkspaceId AS ws_id, currentWorkspaceName AS ws_name, id AS model_id, name AS model_name FROM models m"
+
+    # Fetch all Workspaces and Models
+
+    try:
+        # Execute SQL & fetch rows
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+
+        # Close SQLite connection
+        connection.close()
+
+    except ValueError as ve:
+        logger.error(ve)
+        print(ve)
+        return -1
+
+    except sqlite3.Error as err:
+        print(f'SQL error: {err.args} /  SQL Statement: {sql}')
+        logger.error(f'SQL error: {err.args} /  SQL Statement: {sql}')
+
+    except Exception as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+    
+    return rows
+
 
 
 # === Fetch Anaplan object names of particular IDs  ===

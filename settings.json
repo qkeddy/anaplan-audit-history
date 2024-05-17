@@ -1,12 +1,12 @@
 {
     "authenticationMode": "cert_auth",
     "publicCertPath": "./cert_quin_eddy_public.crt",
-    "privateKeyPath": "./quin_eddy_private-key.pem:",
+    "privateKeyPath": "./quin_eddy_private-key.pem:fltbsl0294",
     "rotatableToken": true,
     "anaplanTenantName": "Employee Tenant",
     "writeSampleFilesOverride": false,
     "database": "audit.db3",
-    "lastRun": 0,
+    "lastRun": 1715978520000,
     "auditBatchSize": 10000,
     "workspaceModelFilterApproach": "select",
     "workspaceModelCombos": [
