@@ -63,3 +63,31 @@ def drop_table(database_file, table):
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
         logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
         sys.exit(1)
+
+# === Create a new table in the SQLite Database  ===
+def create_table(database_file, table, columns):
+    
+        try:
+            # Establish connection to SQLite
+            connection = sqlite3.Connection(database_file)
+    
+            # Create a cursor to perform operations on the database
+            cursor = connection.cursor()
+    
+            # Create the table with the specified columns
+            cursor.execute(f"CREATE TABLE {table} ({columns})")
+            logger.info(f'Table `{table}` has been created')
+            print(f'Table `{table}` has been created')
+    
+            # Commit data and close connection
+            connection.commit()
+            connection.close()
+    
+        except sqlite3.Error as err:
+            logger.warning(f'Table `{table}` already exists')
+            print(f'Table `{table}` already exists')
+    
+        except Exception as err:
+            print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+            logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+            sys.exit(1)
