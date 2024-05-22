@@ -91,3 +91,31 @@ def create_table(database_file, table, columns):
             print(f'{err} in function "{sys._getframe().f_code.co_name}"')
             logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
             sys.exit(1)
+
+# Check if a table exists in the SQLite Database
+def table_exists(database_file, table):
+    try:
+        # Establish connection to SQLite
+        connection = sqlite3.Connection(database_file)
+
+        # Create a cursor to perform operations on the database
+        cursor = connection.cursor()
+
+        # Check if the table exists
+        cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'")
+        table_exists = cursor.fetchone()
+
+        # Commit data and close connection
+        connection.commit()
+        connection.close()
+
+        return table_exists
+
+    except sqlite3.Error as err:
+        logger.warning(f'Table `{table}` does not exist')
+        print(f'Table `{table}` does not exist')
+
+    except Exception as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)

@@ -448,7 +448,7 @@ def get_model_history(base_uri, database_file):
         if 'exports' in res:
             for export in res['exports']:
                 if export['name'] == 'MODEL_HISTORY_EXPORT':
-                    # If a table doesn't exist, create a table to store ongoing model history results    
+                    # If a table doesn't exist, create a table to store ongoing model history results  
 
                     # Create a table to store the current model history results or clear results. 
 
