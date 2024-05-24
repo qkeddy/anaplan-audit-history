@@ -11,6 +11,7 @@ import sys
 import json
 import time
 import re
+import csv
 
 import globals
 import utils
@@ -448,11 +449,57 @@ def get_model_history(base_uri, database_file):
         if 'exports' in res:
             for export in res['exports']:
                 if export['name'] == 'MODEL_HISTORY_EXPORT':
-                    # If a table doesn't exist, create a table to store ongoing model history results  
+                    # Start Export of Model History
+                    export_id = export['id']
+                    uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/exports/{export_id}/tasks'
+                    res = anaplan_api(uri=uri, verb="POST", body={"localeName": "en_US"}, token_type="Bearer ").json()
 
-                    # Create a table to store the current model history results or clear results. 
+                    # Monitor the status of the Export Action
+                    task_id = res['task']['taskId']
+                    uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/exports/{export["id"]}/tasks/{task_id}'
+
+                    while True:
+                        res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ").json()
+
+                        if res['task']['taskState'] == "COMPLETE":
+                            print("Export is complete.")
+                            logger.info("Export is complete.")
+                            break
+                        else:
+                            print("Task is not complete yet. Current state:", res['task']['taskState'])
+                            time.sleep(5)
+
+                    # Get the number chunk details (list files and find the Model History export to download)
+                    uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/files'
+                    res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ").json()
+                    if 'files' in res:
+                        for file in res['files']:
+                            if file['name'] == 'MODEL_HISTORY_EXPORT':
+                                file_id = file['id']
+                                break
+
+                    # Fetch first chunk of Model History and isolate the column names
+                    uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/files/{export_id}/chunks/0'
+                    res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ", csv=True)
+                    csv_reader = csv.reader(res.text.splitlines(), delimiter='\t')
+                    column_names = next(csv_reader)
+                    print(column_names)
+                    
+
+                    # Convert the columns names into SQL friendly names
+                    sql_friendly_names = convert_to_sql_friendly_names(column_names)
+
+                    # Determine if a the MODEL_HISTORY table exists in the database (return None if it doesn't exist)
+                    table_exists = db.table_exists(database_file=database_file, table='MODEL_HISTORY')
+
+                    # If a table doesn't exist, create a table to store ongoing model history results
+                    if (table_exists == None):
+
+                        # Create a table to store the current model history results or clear results. 
+                        db.create_table(database_file=database_file, table='MODEL_HISTORY', columns='id INTEGER')
 
                     # Fetch the model history by running an Anaplan Export Action (synchronously)
+
                     # Download the results of the Export Action by chunk and write to the table using the `replace` mode
 
                     print(export['name'])
@@ -469,6 +516,19 @@ def get_model_history(base_uri, database_file):
     uri = f'{base_uri}/workspaces/{workspace_id}/models/{model_id}/history'
     res = anaplan_api(uri=uri, verb="GET")
     return res.json()
+
+# === Function to convert column names to SQL-friendly names ===
+def convert_to_sql_friendly_names(record):
+    sql_friendly_names = []
+    for key in record.keys():
+        sql_friendly_name = key.replace(' ', '_').replace('/', '_').replace('(', '').replace(')', '')
+        sql_friendly_names.append(f'{{{sql_friendly_name}}}')
+    return sql_friendly_names
+
+
+
+
+
 
 # === Fetch Anaplan object IDs used for uploading data to Anaplan  ===
 def fetch_ids(database_file, **kwargs):
@@ -923,7 +983,7 @@ def upload_time_stamp(settings, database_file):
 
 
 # === Interface with Anaplan REST API   ===
-def anaplan_api(uri, verb, data=None, body={}, token_type="Bearer "):
+def anaplan_api(uri, verb, data=None, body={}, token_type="Bearer ", csv=False):
 
     # Set the header based upon the REST API verb    
     if verb == 'PUT':
@@ -933,11 +993,18 @@ def anaplan_api(uri, verb, data=None, body={}, token_type="Bearer "):
             'Authorization': token_type + globals.Auth.access_token
         }
     else: 
-        get_headers = {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': token_type + globals.Auth.access_token
-        }
+        if csv:
+            get_headers = {
+                'Content-Type': 'text/plain',
+                'Accept': '*/*',
+                'Authorization': token_type + globals.Auth.access_token
+            }
+        else:
+            get_headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': token_type + globals.Auth.access_token
+            }
 
     # Select operation based upon the the verb
     try:
