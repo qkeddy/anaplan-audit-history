@@ -445,100 +445,104 @@ def get_model_history(base_uri, database_file):
 
         # Get Export Actions to find Actions that will trigger the Model History export
         uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/exports'
-        res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ").json()
 
-        if 'exports' in res:
-            for export in res['exports']:
-                if export['name'] == 'MODEL_HISTORY_EXPORT':
-                    # Start Export of Model History
-                    export_id = export['id']
-                    uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/exports/{export_id}/tasks'
-                    res = anaplan_api(uri=uri, verb="POST", body={"localeName": "en_US"}, token_type="Bearer ").json()
+        try:
+            res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ")
 
-                    # Monitor the status of the Export Action
-                    task_id = res['task']['taskId']
-                    uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/exports/{export["id"]}/tasks/{task_id}'
+            if res is None:
+                continue
+            else: 
+                res = res.json()
+                if 'exports' in res:
+                    for export in res['exports']:
+                        if export['name'] == 'MODEL_HISTORY_EXPORT':
+                            # Start Export of Model History
+                            export_id = export['id']
+                            uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/exports/{export_id}/tasks'
+                            res = anaplan_api(uri=uri, verb="POST", body={"localeName": "en_US"}, token_type="Bearer ").json()
 
-                    while True:
-                        res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ").json()
+                            # Monitor the status of the Export Action
+                            task_id = res['task']['taskId']
+                            uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/exports/{export["id"]}/tasks/{task_id}'
 
-                        if res['task']['taskState'] == "COMPLETE":
-                            print("Export is complete.")
-                            logger.info("Export is complete.")
-                            break
-                        else:
-                            print("Task is not complete yet. Current state:", res['task']['taskState'])
-                            time.sleep(5)
+                            while True:
+                                res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ").json()
 
-                    # Get the number chunk details (list files and find the Model History export to download)
-                    uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/files'
-                    res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ").json()
-                    if 'files' in res:
-                        for file in res['files']:
-                            if file['name'] == 'MODEL_HISTORY_EXPORT':
-                                chunk_count = file['chunkCount']
-                                break
+                                if res['task']['taskState'] == "COMPLETE":
+                                    print("Model History Export is complete.")
+                                    logger.info("Model History Export is complete.")
+                                    break
+                                else:
+                                    print("Task is not complete yet. Current state:", res['task']['taskState'])
+                                    time.sleep(5)
 
-                    # Fetch first chunk of Model History and isolate the column names
-                    uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/files/{export_id}/chunks/0'
-                    res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ", csv=True)
+                            # Get the number chunk details (list files and find the Model History export to download)
+                            uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/files'
+                            res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ").json()
+                            if 'files' in res:
+                                for file in res['files']:
+                                    if file['name'] == 'MODEL_HISTORY_EXPORT':
+                                        chunk_count = file['chunkCount']
+                                        break
 
-                    csv_content = res.text.splitlines()
-                    csv_reader = csv.reader(csv_content, delimiter='\t')
-                    column_names = next(csv_reader)
+                            # Fetch first chunk of Model History and isolate the column names
+                            uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/files/{export_id}/chunks/0'
+                            res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ", csv=True)
 
-                    # Convert the columns names into SQL friendly names
-                    sql_friendly_names = convert_to_sql_friendly_names(column_names)
+                            csv_content = res.text.splitlines()
+                            csv_reader = csv.reader(csv_content, delimiter='\t')
+                            column_names = next(csv_reader)
 
-                    # Replace the first chunk of Model History with the SQL friendly column names
-                    csv_content[0] = '\t'.join(sql_friendly_names)
+                            # Convert the columns names into SQL friendly names
+                            sql_friendly_names = convert_to_sql_friendly_names(column_names)
 
-                    # Convert the list of CSV lines back into a single string that can be read by Pandas
-                    modified_csv = '\n'.join(csv_content)
-                    
-                    # Convert the modified CSV content to a Pandas DataFrame
-                    data_frame_latest = pd.read_csv(StringIO(modified_csv), delimiter='\t')
+                            # Replace the first chunk of Model History with the SQL friendly column names
+                            csv_content[0] = '\t'.join(sql_friendly_names)
 
-                    # Continue to fetch chunks of Model History and append to the DataFrame
-                    for i in range(1, math.ceil(chunk_count)):
-                        uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/files/{export_id}/chunks/{i}'
-                        res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ", csv=True)
-                        csv_content = res.text.splitlines()
-                        data_frame_latest = pd.concat([data_frame_latest, pd.read_csv(StringIO('\n'.join(csv_content)), delimiter='\t')], ignore_index=True)
+                            # Convert the list of CSV lines back into a single string that can be read by Pandas
+                            modified_csv = '\n'.join(csv_content)
 
-                    # Determine if a the MODEL_HISTORY table exists in the database. If it does exist, then fetch the data and load to a new Pandas DataFrame
-                    table_exists = db.table_exists(database_file=database_file, table='MODEL_HISTORY')
-                    if table_exists != None:
-                        # If the table exists, then fetch the data and load to a new Pandas DataFrame
-                        data_frame = db.read_table(database_file=database_file, table='MODEL_HISTORY')
+                            # Convert the modified CSV content to a Pandas DataFrame
+                            data_frame_latest = pd.read_csv(StringIO(modified_csv), delimiter='\t')
 
-                        # Combine data_frame_latest and data_frame and align the columns
-                        data_frame = pd.concat([data_frame, data_frame_latest], ignore_index=True)
+                            # Continue to fetch chunks of Model History and append to the DataFrame
+                            for i in range(1, math.ceil(chunk_count)):
+                                uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/files/{export_id}/chunks/{i}'
+                                res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ", csv=True)
+                                csv_content = res.text.splitlines()
+                                data_frame_latest = pd.concat([data_frame_latest, pd.read_csv(StringIO('\n'.join(csv_content)), delimiter='\t')], ignore_index=True)
 
-                        # Remove duplicates
-                        data_frame = data_frame.drop_duplicates()
+                            # Determine if a the MODEL_HISTORY table exists in the database. If it does exist, then fetch the data and load to a new Pandas DataFrame
+                            table_exists = db.table_exists(database_file=database_file, table='MODEL_HISTORY')
+                            if table_exists != None:
+                                # If the table exists, then fetch the data and load to a new Pandas DataFrame
+                                data_frame = db.read_table(database_file=database_file, table='MODEL_HISTORY')
 
-                        # Truncate the MODEL_HISTORY table and write the new data_frame to the table
-                        db.update_table(database_file=database_file, table='MODEL_HISTORY', df=data_frame, mode='append', add_unique_id=True)
-                    else:
-                        # If the table does not exist, then set the data_frame to the latest data_frame_latest
-                        data_frame = data_frame_latest
+                                # Combine data_frame_latest and data_frame and align the columns
+                                data_frame = pd.concat([data_frame, data_frame_latest], ignore_index=True)
 
-                        # Create a new table in the SQLite database and load it with the data_frame
-                        db.update_table(database_file=database_file, table='MODEL_HISTORY', df=data_frame, mode='replace', add_unique_id=True)
-        else:
-            print(f"No 'MODEL_HISTORY_EXPORT' action in response for URI: {uri}")
-            logger.info(f"No 'MODEL_HISTORY_EXPORT' action in response for URI: {uri}")
+                                # Remove duplicates
+                                data_frame = data_frame.drop_duplicates()
+
+                                # Truncate the MODEL_HISTORY table and write the new data_frame to the table
+                                db.update_table(database_file=database_file, table='MODEL_HISTORY', df=data_frame, mode='append', add_unique_id=True)
+                            else:
+                                # If the table does not exist, then set the data_frame to the latest data_frame_latest
+                                data_frame = data_frame_latest
+
+                                # Create a new table in the SQLite database and load it with the data_frame
+                                db.update_table(database_file=database_file, table='MODEL_HISTORY', df=data_frame, mode='replace', add_unique_id=True)
+                else:
+                    print(f"No 'MODEL_HISTORY_EXPORT' action in response for URI: {uri}")
+                    logger.info(f"No 'MODEL_HISTORY_EXPORT' action in response for URI: {uri}")
+        except Exception as e:
+            print(f"An error occurred: {str(e)}")
+            logger.error(f"An error occurred: {str(e)}")
 
 
 # === Function to convert column names to SQL-friendly names ===
 def convert_to_sql_friendly_names(column_names):
     return [name.replace(' ', '_').replace('/', '_').replace('(', '').replace(')', '') for name in column_names]
-
-
-
-
-
 
 
 # === Fetch Anaplan object IDs used for uploading data to Anaplan  ===
@@ -660,7 +664,6 @@ def fetch_ids_list(database_file):
         sys.exit(1)
     
     return rows
-
 
 
 # === Fetch Anaplan object names of particular IDs  ===
@@ -1036,11 +1039,17 @@ def anaplan_api(uri, verb, data=None, body={}, token_type="Bearer ", csv=False):
         return res
 
     except requests.exceptions.HTTPError as err:
-        print(
-            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-        logging.error(
-            f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
-        sys.exit(1)
+            # Check for specific status code 422
+        if err.response.status_code == 422:
+            print(f'422 Client Error: {err.response.json()["status"]["message"]} for url: {uri}')
+            logging.error(f'422 Client Error: {err.response.json()["status"]["message"]} for url: {uri}')
+            return
+        else:
+            print(
+                f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+            logging.error(
+                f'{err} in function "{sys._getframe().f_code.co_name}" with the following details: {err.response.text}')
+            sys.exit(1)
     except requests.exceptions.RequestException as err:
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
         logging.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
