@@ -519,27 +519,17 @@ def get_model_history(base_uri, database_file):
                         data_frame = data_frame.drop_duplicates()
 
                         # Truncate the MODEL_HISTORY table and write the new data_frame to the table
-                        # db.truncate_table(database_file=database_file, table='MODEL_HISTORY')
                         db.update_table(database_file=database_file, table='MODEL_HISTORY', df=data_frame, mode='append', add_unique_id=True)
                     else:
                         # If the table does not exist, then set the data_frame to the latest data_frame_latest
                         data_frame = data_frame_latest
 
                         # Create a new table in the SQLite database and load it with the data_frame
-                        # db.create_table(database_file=database_file, table='MODEL_HISTORY', df=data_frame, add_unique_id=False)
                         db.update_table(database_file=database_file, table='MODEL_HISTORY', df=data_frame, mode='replace', add_unique_id=True)
         else:
             print(f"No 'MODEL_HISTORY_EXPORT' action in response for URI: {uri}")
             logger.info(f"No 'MODEL_HISTORY_EXPORT' action in response for URI: {uri}")
 
-
-    sys.exit(1)
-
-    # Run a SQL query to insert the latest model history from the staging table one incremental second after the last run
-
-    uri = f'{base_uri}/workspaces/{workspace_id}/models/{model_id}/history'
-    res = anaplan_api(uri=uri, verb="GET")
-    return res.json()
 
 # === Function to convert column names to SQL-friendly names ===
 def convert_to_sql_friendly_names(column_names):
