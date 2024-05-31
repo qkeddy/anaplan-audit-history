@@ -512,11 +512,14 @@ def get_model_history(base_uri, database_file):
                                 csv_content = res.text.splitlines()
                                 data_frame_latest = pd.concat([data_frame_latest, pd.read_csv(StringIO('\n'.join(csv_content)), delimiter='\t')], ignore_index=True)
 
+                            # Create SQL friendly table name
+                            table_name = make_sql_friendly_table_name(row[1], row[3])
+
                             # Determine if a the MODEL_HISTORY table exists in the database. If it does exist, then fetch the data and load to a new Pandas DataFrame
-                            table_exists = db.table_exists(database_file=database_file, table='MODEL_HISTORY')
+                            table_exists = db.table_exists(database_file=database_file, table=table_name)
                             if table_exists != None:
                                 # If the table exists, then fetch the data and load to a new Pandas DataFrame
-                                data_frame = db.read_table(database_file=database_file, table='MODEL_HISTORY')
+                                data_frame = db.read_table(database_file=database_file, table=table_name)
 
                                 # Combine data_frame_latest and data_frame and align the columns
                                 data_frame = pd.concat([data_frame, data_frame_latest], ignore_index=True)
@@ -525,13 +528,13 @@ def get_model_history(base_uri, database_file):
                                 data_frame = data_frame.drop_duplicates()
 
                                 # Truncate the MODEL_HISTORY table and write the new data_frame to the table
-                                db.update_table(database_file=database_file, table='MODEL_HISTORY', df=data_frame, mode='append', add_unique_id=True)
+                                db.update_table(database_file=database_file, table=table_name, df=data_frame, mode='replace', add_unique_id=True)
                             else:
                                 # If the table does not exist, then set the data_frame to the latest data_frame_latest
                                 data_frame = data_frame_latest
 
                                 # Create a new table in the SQLite database and load it with the data_frame
-                                db.update_table(database_file=database_file, table='MODEL_HISTORY', df=data_frame, mode='replace', add_unique_id=True)
+                                db.update_table(database_file=database_file, table=table_name, df=data_frame, mode='replace', add_unique_id=True)
                 else:
                     print(f"No 'MODEL_HISTORY_EXPORT' action in response for URI: {uri}")
                     logger.info(f"No 'MODEL_HISTORY_EXPORT' action in response for URI: {uri}")
@@ -543,6 +546,20 @@ def get_model_history(base_uri, database_file):
 # === Function to convert column names to SQL-friendly names ===
 def convert_to_sql_friendly_names(column_names):
     return [name.replace(' ', '_').replace('/', '_').replace('(', '').replace(')', '') for name in column_names]
+
+
+# === Make SQL friendly table name ===
+def make_sql_friendly_table_name(string1, string2):
+    # Combine the two strings with an underscore
+    combined_string = f"MH_{string1}_{string2}"
+    
+    # Remove any characters that are not alphanumeric or underscores
+    sql_friendly_name = re.sub(r'\W+', '_', combined_string)
+    
+    # Convert to lowercase to maintain consistency
+    sql_friendly_name = sql_friendly_name.lower()
+    
+    return sql_friendly_name
 
 
 # === Fetch Anaplan object IDs used for uploading data to Anaplan  ===

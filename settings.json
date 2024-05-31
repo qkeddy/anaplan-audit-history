@@ -6,7 +6,7 @@
     "anaplanTenantName": "Employee Tenant",
     "writeSampleFilesOverride": false,
     "database": "audit.db3",
-    "lastRun": 1717181846000,
+    "lastRun": 1717184537000,
     "auditBatchSize": 10000,
     "workspaceModelFilterApproach": "select",
     "workspaceModelCombos": [
