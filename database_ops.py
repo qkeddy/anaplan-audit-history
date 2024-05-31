@@ -5,10 +5,33 @@
 import logging
 import sqlite3
 import sys
+import pandas as pd
 
 # Enable logger
 logger = logging.getLogger(__name__)
 
+# ===  Read from tables in the SQLite Database  ===
+def read_table(database_file, table):
+    try:
+        # Establish connection to SQLite
+        connection = sqlite3.Connection(database_file)
+
+        # Read the contents of the table into a Data Frame
+        df = pd.read_sql_query(f"SELECT * FROM {table}", connection)
+
+        # Close connection
+        connection.close()
+
+        return df
+
+    except sqlite3.Error as err:
+        logger.warning(f'Table `{table}` does not exist')
+        print(f'Table `{table}` does not exist')
+
+    except Exception as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
 
 # ===  Write to tables in the SQLite Database  ===
 def update_table(database_file, table, df, mode, add_unique_id=True):
@@ -27,6 +50,7 @@ def update_table(database_file, table, df, mode, add_unique_id=True):
         connection.close()
 
     except sqlite3.Error as err:
+        print(err)
         logger.warning(f'Table `{table}` does not exist')
         print(f'Table `{table}` does not exist')
 
@@ -34,7 +58,6 @@ def update_table(database_file, table, df, mode, add_unique_id=True):
         print(f'{err} in function "{sys._getframe().f_code.co_name}"')
         logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
         sys.exit(1)
-
 
 # ===  Drop existing tables in the SQLite Database  ===
 def drop_table(database_file, table):
@@ -92,7 +115,7 @@ def create_table(database_file, table, columns):
             logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
             sys.exit(1)
 
-# Check if a table exists in the SQLite Database
+# === Check if a table exists in the SQLite Database ===
 def table_exists(database_file, table):
     try:
         # Establish connection to SQLite
@@ -110,6 +133,33 @@ def table_exists(database_file, table):
         connection.close()
 
         return table_exists
+
+    except sqlite3.Error as err:
+        logger.warning(f'Table `{table}` does not exist')
+        print(f'Table `{table}` does not exist')
+
+    except Exception as err:
+        print(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        logger.error(f'{err} in function "{sys._getframe().f_code.co_name}"')
+        sys.exit(1)
+
+# === Truncate a table in the SQLite Database ===
+def truncate_table(database_file, table):
+    try:
+        # Establish connection to SQLite
+        connection = sqlite3.Connection(database_file)
+
+        # Create a cursor to perform operations on the database
+        cursor = connection.cursor()
+
+        # Truncate the specified table
+        cursor.execute(f"DELETE FROM {table}")
+        logger.info(f'Table `{table}` has been truncated')
+        print(f'Table `{table}` has been truncated')
+
+        # Commit data and close connection
+        connection.commit()
+        connection.close()
 
     except sqlite3.Error as err:
         logger.warning(f'Table `{table}` does not exist')

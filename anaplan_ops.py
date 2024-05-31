@@ -12,6 +12,7 @@ import json
 import time
 import re
 import csv
+from io import StringIO
 
 import globals
 import utils
@@ -475,35 +476,58 @@ def get_model_history(base_uri, database_file):
                     if 'files' in res:
                         for file in res['files']:
                             if file['name'] == 'MODEL_HISTORY_EXPORT':
-                                file_id = file['id']
+                                chunk_count = file['chunkCount']
                                 break
 
                     # Fetch first chunk of Model History and isolate the column names
                     uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/files/{export_id}/chunks/0'
                     res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ", csv=True)
-                    csv_reader = csv.reader(res.text.splitlines(), delimiter='\t')
+
+                    csv_content = res.text.splitlines()
+                    csv_reader = csv.reader(csv_content, delimiter='\t')
                     column_names = next(csv_reader)
-                    print(column_names)
-                    
 
                     # Convert the columns names into SQL friendly names
                     sql_friendly_names = convert_to_sql_friendly_names(column_names)
 
-                    # Determine if a the MODEL_HISTORY table exists in the database (return None if it doesn't exist)
+                    # Replace the first chunk of Model History with the SQL friendly column names
+                    csv_content[0] = '\t'.join(sql_friendly_names)
+
+                    # Convert the list of CSV lines back into a single string that can be read by Pandas
+                    modified_csv = '\n'.join(csv_content)
+                    
+                    # Convert the modified CSV content to a Pandas DataFrame
+                    data_frame_latest = pd.read_csv(StringIO(modified_csv), delimiter='\t')
+
+                    # Continue to fetch chunks of Model History and append to the DataFrame
+                    for i in range(1, math.ceil(chunk_count)):
+                        uri = f'{base_uri}/workspaces/{row[0]}/models/{row[2]}/files/{export_id}/chunks/{i}'
+                        res = anaplan_api(uri=uri, verb="GET", token_type="Bearer ", csv=True)
+                        csv_content = res.text.splitlines()
+                        data_frame_latest = pd.concat([data_frame_latest, pd.read_csv(StringIO('\n'.join(csv_content)), delimiter='\t')], ignore_index=True)
+
+                    # Determine if a the MODEL_HISTORY table exists in the database. If it does exist, then fetch the data and load to a new Pandas DataFrame
                     table_exists = db.table_exists(database_file=database_file, table='MODEL_HISTORY')
+                    if table_exists != None:
+                        # If the table exists, then fetch the data and load to a new Pandas DataFrame
+                        data_frame = db.read_table(database_file=database_file, table='MODEL_HISTORY')
 
-                    # If a table doesn't exist, create a table to store ongoing model history results
-                    if (table_exists == None):
+                        # Combine data_frame_latest and data_frame and align the columns
+                        data_frame = pd.concat([data_frame, data_frame_latest], ignore_index=True)
 
-                        # Create a table to store the current model history results or clear results. 
-                        db.create_table(database_file=database_file, table='MODEL_HISTORY', columns='id INTEGER')
+                        # Remove duplicates
+                        data_frame = data_frame.drop_duplicates()
 
-                    # Fetch the model history by running an Anaplan Export Action (synchronously)
+                        # Truncate the MODEL_HISTORY table and write the new data_frame to the table
+                        # db.truncate_table(database_file=database_file, table='MODEL_HISTORY')
+                        db.update_table(database_file=database_file, table='MODEL_HISTORY', df=data_frame, mode='append', add_unique_id=True)
+                    else:
+                        # If the table does not exist, then set the data_frame to the latest data_frame_latest
+                        data_frame = data_frame_latest
 
-                    # Download the results of the Export Action by chunk and write to the table using the `replace` mode
-
-                    print(export['name'])
-                    break
+                        # Create a new table in the SQLite database and load it with the data_frame
+                        # db.create_table(database_file=database_file, table='MODEL_HISTORY', df=data_frame, add_unique_id=False)
+                        db.update_table(database_file=database_file, table='MODEL_HISTORY', df=data_frame, mode='replace', add_unique_id=True)
         else:
             print(f"No 'MODEL_HISTORY_EXPORT' action in response for URI: {uri}")
             logger.info(f"No 'MODEL_HISTORY_EXPORT' action in response for URI: {uri}")
@@ -518,12 +542,9 @@ def get_model_history(base_uri, database_file):
     return res.json()
 
 # === Function to convert column names to SQL-friendly names ===
-def convert_to_sql_friendly_names(record):
-    sql_friendly_names = []
-    for key in record.keys():
-        sql_friendly_name = key.replace(' ', '_').replace('/', '_').replace('(', '').replace(')', '')
-        sql_friendly_names.append(f'{{{sql_friendly_name}}}')
-    return sql_friendly_names
+def convert_to_sql_friendly_names(column_names):
+    return [name.replace(' ', '_').replace('/', '_').replace('(', '').replace(')', '') for name in column_names]
+
 
 
 
