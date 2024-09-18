@@ -253,7 +253,7 @@ def refresh_sequence(settings, database_file, uris, targetModelObjects):
                            database_table=targetModelObjects['cloudWorksData']['table'], add_unique_id=targetModelObjects['cloudWorksData']['addUniqueId'], record_path="integrations", page_size_key=['meta', 'paging', 'currentPageSize'], page_index_key=['meta', 'paging', 'offset'], total_results_key=['meta', 'paging', 'totalSize'])
     
     # Get Model History
-    get_model_history(base_uri=uris['integrationApi'], database_file=database_file)
+    # get_model_history(base_uri=uris['integrationApi'], database_file=database_file)
    
     # Fetch ids for target Workspace and Model from the SQLite database
     print(f'Update Anaplan Audit Model')
